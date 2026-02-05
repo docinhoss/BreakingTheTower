@@ -5,8 +5,9 @@ import java.util.*;
 
 import com.mojang.tower.event.EventBus;
 import com.mojang.tower.event.PlantSound;
+import com.mojang.tower.navigation.NavigationGrid;
 
-public class Island
+public class Island implements NavigationGrid
 {
     private TowerComponent tower;
     public BufferedImage image;

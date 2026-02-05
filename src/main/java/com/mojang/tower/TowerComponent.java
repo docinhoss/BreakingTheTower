@@ -119,7 +119,7 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
         island = new Island(this, bitmaps.island);
 
         // Now that Island exists, inject it into MovementSystem
-        movementSystem.setIsland(island);
+        movementSystem.setNavigationGrid(island);
     }
 
     private void handleSoundEvent(SoundEvent event)
