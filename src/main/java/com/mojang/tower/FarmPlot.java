@@ -2,7 +2,7 @@ package com.mojang.tower;
 
 import java.awt.Graphics2D;
 
-public class FarmPlot extends Entity
+public final class FarmPlot extends Entity
 {
     public static final int GROW_SPEED = 200;
     private int age;

@@ -10,7 +10,7 @@ import com.mojang.tower.event.GatherSound;
 import com.mojang.tower.event.PuffEffect;
 import com.mojang.tower.event.SpawnSound;
 
-public class House extends Entity
+public final class House extends Entity
 {
     private static final int POPULATION_PER_RESIDENCE = 10;
     private static final int WARRIORS_PER_BARRACKS = 5;

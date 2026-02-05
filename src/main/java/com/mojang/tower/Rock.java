@@ -2,7 +2,7 @@ package com.mojang.tower;
 
 import java.awt.Graphics2D;
 
-public class Rock extends Entity
+public final class Rock extends Entity
 {
     private int type = 0;
     private int stamina = 5000;
