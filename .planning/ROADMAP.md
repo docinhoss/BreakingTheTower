@@ -60,11 +60,12 @@ Plans:
   3. Monster movement logic lives in MovementSystem, not in Monster.tick()
   4. Jobs request movement via MovementSystem instead of directly updating positions
   5. Golden master tests still pass (behavior preserved)
-**Plans**: TBD
+**Plans**: 3 plans in 3 waves
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
+- [ ] 03-01-PLAN.md — MovementSystem infrastructure (Wave 1)
+- [ ] 03-02-PLAN.md — Peon movement extraction (Wave 2)
+- [ ] 03-03-PLAN.md — Monster movement extraction (Wave 3)
 
 ### Phase 4: Navigation & Sealed Hierarchies
 **Goal**: Complete architecture with queryable world representation and type-safe entity hierarchies
@@ -91,7 +92,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Foundation & Language Modernization | 3/3 | ✓ Complete | 2026-02-05 |
 | 2. Decoupling Systems | 2/2 | ✓ Complete | 2026-02-05 |
-| 3. Movement Extraction | 0/2 | Not started | - |
+| 3. Movement Extraction | 0/3 | Not started | - |
 | 4. Navigation & Sealed Hierarchies | 0/2 | Not started | - |
 
 ---
