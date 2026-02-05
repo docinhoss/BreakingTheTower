@@ -199,14 +199,16 @@ public class House extends Entity
         {
             public boolean accepts(Entity e)
             {
-                return e.isAlive() && (e instanceof Peon) && (!mustBeFree || ((Peon) e).job == null);
+                if (e instanceof Peon peon) {
+                    return e.isAlive() && (!mustBeFree || peon.job == null);
+                }
+                return false;
             }
         };
 
         Entity e = getRandomTarget(r, s, peonFilter);
-        if (e instanceof Peon)
+        if (e instanceof Peon peon)
         {
-            Peon peon = (Peon) e;
             return peon;
         }
         return null;

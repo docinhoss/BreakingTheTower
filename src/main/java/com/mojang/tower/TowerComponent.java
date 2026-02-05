@@ -467,9 +467,9 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
                             return e instanceof House;
                         }
                     });
-                    if (e != null)
+                    if (e instanceof House house)
                     {
-                        ((House) e).sell();
+                        house.sell();
                     }
                 }
             }

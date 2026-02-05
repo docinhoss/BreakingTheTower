@@ -9,7 +9,7 @@ public class Island
     public BufferedImage image;
     private int[] pixels;
 
-    List<Entity> entities = new ArrayList<Entity>();
+    List<Entity> entities = new ArrayList<>();
     private Random random = new Random(8844);
 
     public Resources resources = new Resources();
@@ -34,7 +34,7 @@ public class Island
             double x = (random.nextDouble() * 256 - 128) * 1.5;
             double y = (random.nextDouble() * 256 - 128) * 1.5;
 
-            Tower t = new Tower(x, y);
+            var t = new Tower(x, y);
             if (isFree(t.x, t.y, t.r))
             {
                 addEntity(t);
@@ -57,7 +57,7 @@ public class Island
 
         double xStart = 40;
         double yStart = -120;
-        House house = new House(xStart, yStart, HouseType.GUARDPOST);
+        var house = new House(xStart, yStart, HouseType.GUARDPOST);
         house.complete();
         addEntity(house);
 
@@ -66,7 +66,7 @@ public class Island
             double x = xStart + (random.nextDouble() * 32 - 16);
             double y = yStart + (random.nextDouble() * 32 - 16);
 
-            Peon peon = new Peon(x, y, 0);
+            var peon = new Peon(x, y, 0);
             if (isFree(peon.x, peon.y, peon.r))
             {
                 addEntity(peon);
@@ -81,7 +81,7 @@ public class Island
         {
             double x = xo + random.nextGaussian() * 10;
             double y = yo + random.nextGaussian() * 10;
-            Rock rock = new Rock(x, y);
+            var rock = new Rock(x, y);
 
             if (isFree(rock.x, rock.y, rock.r))
             {
@@ -96,7 +96,7 @@ public class Island
         {
             double x = xo + random.nextGaussian() * 20;
             double y = yo + random.nextGaussian() * 20;
-            Tree tree = new Tree(x, y, random.nextInt(16 * Tree.GROW_SPEED));
+            var tree = new Tree(x, y, random.nextInt(16 * Tree.GROW_SPEED));
 
             if (isFree(tree.x, tree.y, tree.r))
             {
@@ -211,8 +211,8 @@ public class Island
             double xp = x * cos + y * sin;
             double yp = x * sin - y * cos;
 
-            House house = new House(xp, yp, type);
-            if (isFree(house.x, house.y, house.r))
+            var houseToCheck = new House(xp, yp, type);
+            if (isFree(houseToCheck.x, houseToCheck.y, houseToCheck.r))
             {
                 return true;
             }
@@ -232,11 +232,11 @@ public class Island
             double xp = x * cos + y * sin;
             double yp = x * sin - y * cos;
 
-            House house = new House(xp, yp, type);
-            if (isFree(house.x, house.y, house.r))
+            var newHouse = new House(xp, yp, type);
+            if (isFree(newHouse.x, newHouse.y, newHouse.r))
             {
                 Sounds.play(new Sound.Plant());
-                addEntity(house);
+                addEntity(newHouse);
                 resources.charge(type);
             }
         }
