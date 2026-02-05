@@ -7,8 +7,8 @@ import java.awt.image.*;
 import java.io.IOException;
 import java.util.Collections;
 
-import com.mojang.tower.event.EventBus;
-import com.mojang.tower.event.SelectSound;
+import com.mojang.tower.event.*;
+import com.mojang.tower.service.ServiceLocator;
 
 public class TowerComponent extends Canvas implements Runnable, MouseListener, MouseMotionListener, KeyListener
 {
@@ -105,7 +105,30 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
             e.printStackTrace();
         }
 
+        // Initialize services and wire event handlers
+        ServiceLocator.initializeDefaults();
+        EventBus.subscribe(SoundEvent.class, this::handleSoundEvent);
+
         island = new Island(this, bitmaps.island);
+    }
+
+    private void handleSoundEvent(SoundEvent event)
+    {
+        Sound sound = switch (event)
+        {
+            case SelectSound() -> new Sound.Select();
+            case PlantSound() -> new Sound.Plant();
+            case DestroySound() -> new Sound.Destroy();
+            case GatherSound() -> new Sound.Gather();
+            case FinishBuildingSound() -> new Sound.FinishBuilding();
+            case SpawnSound() -> new Sound.Spawn();
+            case SpawnWarriorSound() -> new Sound.SpawnWarrior();
+            case DingSound() -> new Sound.Ding();
+            case DeathSound() -> new Sound.Death();
+            case MonsterDeathSound() -> new Sound.MonsterDeath();
+            case WinSound() -> new Sound.WinSound();
+        };
+        ServiceLocator.audio().play(sound);
     }
 
     public void run()
@@ -399,7 +422,7 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
             }
         }
         
-        g.drawImage(bitmaps.soundButtons[Sounds.isMute()?1:0], width-20, height-20, null);
+        g.drawImage(bitmaps.soundButtons[ServiceLocator.audio().isMute()?1:0], width-20, height-20, null);
     }
 
     public void mouseClicked(MouseEvent me)
@@ -421,7 +444,7 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
         {
             if (me.getX()>=width*2-40 && me.getY()>=height*2-40 && me.getX()<=width*2-40+32 && me.getY()<=height*2-40+32)
             {
-                Sounds.setMute(!Sounds.isMute());
+                ServiceLocator.audio().setMute(!ServiceLocator.audio().isMute());
                 return;
             }
             
