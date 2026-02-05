@@ -5,62 +5,38 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** A clean, extensible architecture that makes adding pathfinding straightforward
-**Current focus:** Milestone Complete - All 4 phases verified
+**Current focus:** Planning next milestone (v2 Pathfinding)
 
 ## Current Position
 
-Phase: 4 of 4 (Navigation & Sealed Hierarchies)
-Plan: 3 of 3 in current phase
-Status: Milestone complete
-Last activity: 2026-02-05 - Phase 4 verified (Navigation & Sealed Hierarchies)
+Phase: Ready to plan
+Plan: Not started
+Status: v1 milestone complete, ready for v2
+Last activity: 2026-02-05 — v1 milestone complete
 
-Progress: [██████████] 100% (11/11 plans)
+Progress: Ready for `/gsd:new-milestone`
 
-## Phase 1 Completion
+## v1 Milestone Complete
 
-**Verified:** 2026-02-05
-**Score:** 5/5 must-haves
-**Report:** .planning/phases/01-foundation-language-modernization/01-VERIFICATION.md
+**Shipped:** 2026-02-05
+**Phases:** 4 phases (11 plans)
+**Requirements:** 19/19 satisfied
+**Report:** .planning/MILESTONES.md
 
-## Phase 2 Completion
+**v1 Deliverables:**
+- Golden master test (5000 ticks)
+- Java 21 modernization (records, sealed classes, pattern matching)
+- EventBus and ServiceLocator patterns
+- MovementSystem extraction
+- NavigationGrid interface
+- Sealed Entity/Job hierarchies
 
-**Verified:** 2026-02-05
-**Plans:** 2/2
-**Patterns established:**
-- PTRN-01: State pattern (GameState sealed interface)
-- PTRN-02: Observer pattern via EventBus (SoundEvent, EffectEvent)
-- PTRN-03: Service Locator (AudioService)
-- PTRN-04: Visual effects via events (EffectEvent)
-- PTRN-05: Synchronous event dispatch for determinism
+**v1 Archives:**
+- .planning/milestones/v1-ROADMAP.md
+- .planning/milestones/v1-REQUIREMENTS.md
+- .planning/milestones/v1-MILESTONE-AUDIT.md
 
-## Phase 3 Completion
-
-**Verified:** 2026-02-05
-**Score:** 5/5 must-haves
-**Report:** .planning/phases/03-movement-extraction/03-VERIFICATION.md
-**Plans:** 3/3
-**Infrastructure established:**
-- MovementSystem service via ServiceLocator (03-01)
-- MovementRequest/MovementResult records (03-01)
-- Peon movement extraction with switch expression (03-02)
-- Monster movement extraction with instanceof check (03-03)
-**Outcome:** Single source of truth for entity movement execution - pathfinding integration point ready
-
-## Phase 4 Completion
-
-**Verified:** 2026-02-05
-**Score:** 5/5 must-haves
-**Report:** .planning/phases/04-navigation-sealed-hierarchies/04-VERIFICATION.md
-**Plans:** 3/3
-**Infrastructure established:**
-- NavigationGrid interface in navigation package (04-01)
-- Island implements NavigationGrid (04-01)
-- MovementSystem depends on interface, not concrete Island (04-01)
-- Entity sealed class with 9 final subclasses (04-02)
-- Job sealed class with 6 final nested subclasses (04-03)
-**Outcome:** Type-safe hierarchies with exhaustive pattern matching, clean abstraction for pathfinding integration
-
-## Performance Metrics
+## Performance Metrics (v1)
 
 **Velocity:**
 - Total plans completed: 11
@@ -76,81 +52,23 @@ Progress: [██████████] 100% (11/11 plans)
 | 03-movement | 3 | 7 min | 2.3 min |
 | 04-navigation | 3 | 7 min | 2.3 min |
 
-**Recent Trend:**
-- Last 5 plans: 03-03 (2 min), 04-01 (3 min), 04-02 (2 min), 04-03 (2 min)
-- Trend: Consistent rapid execution
+## v2 Candidate Goals
 
-*Updated after each plan completion*
+**Pathfinding:**
+- A* algorithm implementation
+- Path caching
+- Dynamic recalculation
 
-## Accumulated Context
-
-### Decisions
-
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- 01-01: Use Maven over Gradle (simpler setup, consistent with CONTEXT.md)
-- 01-01: Preserve original res/ folder for hot-reload development feature
-- 01-02: Use Java records for state capture (immutable, auto-equals/hashCode)
-- 01-02: Static testSeedBase mechanism in Entity/Job for deterministic Random
-- 01-02: HeadlessTowerComponent/Bitmaps stubs for test isolation from AWT
-- 01-03: Vec and Cost as records for automatic equals/hashCode (value semantics)
-- 01-03: Pattern matching only where cast follows instanceof (not pure type checks)
-- 01-03: var only for local variables where type obvious from RHS (new expressions)
-- 01-03: Switch expression with default case to match original silent-ignore behavior
-- 02-01: Split SoundEvent records into separate public files (Java single public class per file requirement)
-- 02-01: Synchronous EventBus dispatch (critical for game determinism)
-- 02-01: ConcurrentHashMap + CopyOnWriteArrayList for thread-safe listener management
-- 02-02: States return new states, don't hold TowerComponent reference
-- 02-02: Type patterns (case TitleState titleState) not deconstruction patterns for non-records
-- 02-02: Regenerate golden master after EventBus integration
-- 03-01: MovementSystem takes Island via setter (injected after Island construction)
-- 03-01: MovementResult.Blocked.blocker can be null (terrain/boundary blocking)
-- 03-02: MovementSystem allows movement when island is null (construction phase)
-- 03-02: Initialize MovementSystem before Island creation to handle entity ticks during construction
-- 03-03: Use instanceof check instead of switch for Monster (only care about Blocked case)
-- 04-01: NavigationGrid interface with 3 methods matching Island's API (focused interface)
-- 04-02: All Entity subclasses marked final (no intermediate sealed classes needed)
-- 04-03: Job remains sealed class (not interface) to preserve shared mutable state
-
-### Pending Todos
-
-None.
-
-### Blockers/Concerns
-
-**From Research:**
-- Phase 3 (Movement Extraction) flagged as highest risk - RESOLVED successfully
-- Avoided full rewrite temptation - used targeted extraction
-
-**From Phase 1:**
-- Golden master snapshot generated and committed
-- Test passes in ~3.3s, providing safety net for future refactoring
-
-**From Phase 2:**
-- EventBus infrastructure complete with SoundEvent and EffectEvent
-- ServiceLocator ready for additional services
-- GameState sealed interface provides clean state machine model
-- Golden master regenerated after EventBus changes (605MB, 5000 ticks)
-
-**From Phase 3:**
-- MovementSystem is now single source of truth for entity movement
-- Both Peon and Monster use ServiceLocator.movement()
-- Ready for Phase 4 pathfinding integration
-
-**From Phase 4:**
-- NavigationGrid abstraction in place
-- Future pathfinding can depend on interface rather than Island
-- Clean dependency inversion established
-- Entity sealed hierarchy enables exhaustive pattern matching on entity types
-- Job sealed hierarchy enables exhaustive pattern matching on job types
+**Performance:**
+- Spatial partitioning
+- Object pooling for Puffs
 
 ## Session Continuity
 
-Last session: 2026-02-05T20:20:00Z
-Stopped at: Milestone complete - All 4 phases verified
+Last session: 2026-02-05T21:30:00Z
+Stopped at: v1 milestone complete
 Resume file: None
 
 ---
 *State initialized: 2026-02-05*
-*Last updated: 2026-02-05*
+*Last updated: 2026-02-05 — v1 milestone complete*

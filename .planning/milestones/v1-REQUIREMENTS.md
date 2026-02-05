@@ -1,3 +1,13 @@
+# Requirements Archive: v1 Breaking the Tower Modernization
+
+**Archived:** 2026-02-05
+**Status:** ✅ SHIPPED
+
+This is the archived requirements specification for v1.
+For current requirements, see `.planning/REQUIREMENTS.md` (created for next milestone).
+
+---
+
 # Requirements: Breaking the Tower Modernization
 
 **Defined:** 2026-02-05
@@ -40,9 +50,9 @@ Requirements for this modernization milestone. Each maps to roadmap phases.
 - [x] **ARCH-05**: NavigationGrid interface created for world queries
 - [x] **ARCH-06**: Island implements NavigationGrid for collision/walkability queries
 
-## v2 Requirements
+## v2 Requirements (Deferred)
 
-Deferred to future milestone. Tracked but not in current roadmap.
+Tracked but not in v1 scope. Carried forward to next milestone.
 
 ### Pathfinding
 
@@ -74,37 +84,45 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+Which phases covered which requirements.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUN-01 | Phase 1 | Complete |
-| FOUN-02 | Phase 1 | Complete |
-| FOUN-03 | Phase 1 | Complete |
-| LANG-01 | Phase 1 | Complete |
-| LANG-02 | Phase 1 | Complete |
-| LANG-05 | Phase 1 | Complete |
-| LANG-06 | Phase 1 | Complete |
-| LANG-07 | Phase 1 | Complete |
-| PTRN-01 | Phase 2 | Complete |
-| PTRN-02 | Phase 2 | Complete |
-| PTRN-03 | Phase 2 | Complete |
-| PTRN-04 | Phase 2 | Complete |
-| PTRN-05 | Phase 2 | Complete |
-| ARCH-01 | Phase 3 | Complete |
-| ARCH-02 | Phase 3 | Complete |
-| ARCH-03 | Phase 3 | Complete |
-| ARCH-04 | Phase 3 | Complete |
-| LANG-03 | Phase 4 | Complete |
-| LANG-04 | Phase 4 | Complete |
-| ARCH-05 | Phase 4 | Complete |
-| ARCH-06 | Phase 4 | Complete |
+| FOUN-01 | Phase 1 | ✅ Complete |
+| FOUN-02 | Phase 1 | ✅ Complete |
+| FOUN-03 | Phase 1 | ✅ Complete |
+| LANG-01 | Phase 1 | ✅ Complete |
+| LANG-02 | Phase 1 | ✅ Complete |
+| LANG-05 | Phase 1 | ✅ Complete |
+| LANG-06 | Phase 1 | ✅ Complete |
+| LANG-07 | Phase 1 | ✅ Complete |
+| PTRN-01 | Phase 2 | ✅ Complete |
+| PTRN-02 | Phase 2 | ✅ Complete |
+| PTRN-03 | Phase 2 | ✅ Complete |
+| PTRN-04 | Phase 2 | ✅ Complete |
+| PTRN-05 | Phase 2 | ✅ Complete |
+| ARCH-01 | Phase 3 | ✅ Complete |
+| ARCH-02 | Phase 3 | ✅ Complete |
+| ARCH-03 | Phase 3 | ✅ Complete |
+| ARCH-04 | Phase 3 | ✅ Complete |
+| LANG-03 | Phase 4 | ✅ Complete |
+| LANG-04 | Phase 4 | ✅ Complete |
+| ARCH-05 | Phase 4 | ✅ Complete |
+| ARCH-06 | Phase 4 | ✅ Complete |
 
 **Coverage:**
 - v1 requirements: 19 total
-- Mapped to phases: 19
-- Unmapped: 0
+- Shipped: 19
+- Adjusted: 0
+- Dropped: 0
 
 ---
-*Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 - Phase 4 complete (19/19 v1 requirements satisfied)*
+
+## Milestone Summary
+
+**Shipped:** 19 of 19 v1 requirements
+**Adjusted:** None — all requirements shipped as originally specified
+**Dropped:** None
+
+---
+*Archived: 2026-02-05 as part of v1 milestone completion*
