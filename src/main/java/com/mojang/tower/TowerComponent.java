@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import com.mojang.tower.event.*;
+import com.mojang.tower.movement.MovementSystem;
 import com.mojang.tower.service.ServiceLocator;
 import com.mojang.tower.state.*;
 
@@ -112,6 +113,11 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
         EventBus.subscribe(EffectEvent.class, this::handleEffectEvent);
 
         island = new Island(this, bitmaps.island);
+
+        // Initialize MovementSystem (after Island creation)
+        var movementSystem = new MovementSystem();
+        movementSystem.setIsland(island);
+        ServiceLocator.provide(movementSystem);
     }
 
     private void handleSoundEvent(SoundEvent event)

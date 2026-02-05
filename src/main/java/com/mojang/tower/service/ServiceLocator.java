@@ -1,5 +1,7 @@
 package com.mojang.tower.service;
 
+import com.mojang.tower.movement.MovementSystem;
+
 /**
  * Central registry for game services.
  *
@@ -8,6 +10,7 @@ package com.mojang.tower.service;
  */
 public final class ServiceLocator {
     private static AudioService audioService;
+    private static MovementSystem movementSystem;
 
     private ServiceLocator() {
         // Static utility class
@@ -36,6 +39,28 @@ public final class ServiceLocator {
     }
 
     /**
+     * Register a MovementSystem implementation.
+     *
+     * @param service the service to register
+     */
+    public static void provide(MovementSystem service) {
+        movementSystem = service;
+    }
+
+    /**
+     * Get the registered MovementSystem.
+     *
+     * @return the movement system
+     * @throws IllegalStateException if no service has been registered
+     */
+    public static MovementSystem movement() {
+        if (movementSystem == null) {
+            throw new IllegalStateException("MovementSystem not initialized. Call ServiceLocator.provide(MovementSystem) first.");
+        }
+        return movementSystem;
+    }
+
+    /**
      * Initialize default service implementations.
      * Call this at application startup.
      */
@@ -49,5 +74,6 @@ public final class ServiceLocator {
      */
     public static void reset() {
         audioService = null;
+        movementSystem = null;
     }
 }
