@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** A clean, extensible architecture that makes adding pathfinding straightforward
-**Current focus:** Phase 2 Complete - Ready for Phase 3 (Movement Extraction)
+**Current focus:** Phase 3 (Movement Extraction) - Plan 01 Complete
 
 ## Current Position
 
-Phase: 2 of 4 (Decoupling Systems) - COMPLETE
-Plan: 2 of 2 in current phase - COMPLETE
-Status: Phase complete
-Last activity: 2026-02-05 - Completed 02-02-PLAN.md (State Pattern and Effect Events)
+Phase: 3 of 4 (Movement Extraction)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-05 - Completed 03-01-PLAN.md (MovementSystem Infrastructure)
 
-Progress: [█████░░░░░] 42% (5/12 plans)
+Progress: [██████░░░░] 50% (6/12 plans)
 
 ## Phase 1 Completion
 
@@ -33,12 +33,21 @@ Progress: [█████░░░░░] 42% (5/12 plans)
 - PTRN-04: Visual effects via events (EffectEvent)
 - PTRN-05: Synchronous event dispatch for determinism
 
+## Phase 3 Progress
+
+**Started:** 2026-02-05
+**Plans:** 1/3 complete
+**Infrastructure established:**
+- MovementSystem service via ServiceLocator
+- MovementRequest/MovementResult records
+- Ready for Peon (02) and Monster (03) extraction
+
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 6 min
-- Total execution time: 28 min
+- Total plans completed: 6
+- Average duration: 5 min
+- Total execution time: 31 min
 
 **By Phase:**
 
@@ -46,9 +55,10 @@ Progress: [█████░░░░░] 42% (5/12 plans)
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 15 min | 5 min |
 | 02-decoupling | 2 | 13 min | 6.5 min |
+| 03-movement | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (5 min), 01-03 (8 min), 02-01 (5 min), 02-02 (8 min)
+- Last 5 plans: 01-03 (8 min), 02-01 (5 min), 02-02 (8 min), 03-01 (3 min)
 - Trend: Stable velocity
 
 *Updated after each plan completion*
@@ -75,6 +85,8 @@ Recent decisions affecting current work:
 - 02-02: States return new states, don't hold TowerComponent reference
 - 02-02: Type patterns (case TitleState titleState) not deconstruction patterns for non-records
 - 02-02: Regenerate golden master after EventBus integration
+- 03-01: MovementSystem takes Island via setter (injected after Island construction)
+- 03-01: MovementResult.Blocked.blocker can be null (terrain/boundary blocking)
 
 ### Pending Todos
 
@@ -96,10 +108,14 @@ None.
 - GameState sealed interface provides clean state machine model
 - Golden master regenerated after EventBus changes (605MB, 5000 ticks)
 
+**From Phase 3:**
+- MovementSystem infrastructure ready for entity integration
+- Plan 02 (Peon) is highest risk - needs careful incremental extraction
+
 ## Session Continuity
 
-Last session: 2026-02-05T19:35:52Z
-Stopped at: Completed 02-02-PLAN.md (Phase 2 complete)
+Last session: 2026-02-05T19:56:00Z
+Stopped at: Completed 03-01-PLAN.md (MovementSystem Infrastructure)
 Resume file: None
 
 ---
