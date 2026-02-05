@@ -5,16 +5,22 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** A clean, extensible architecture that makes adding pathfinding straightforward
-**Current focus:** Phase 1 COMPLETE - Ready for Phase 2 (Tower Mechanics) or Phase 3 (Movement Extraction)
+**Current focus:** Phase 2 - Decoupling Systems (EventBus, State pattern, Service Locator)
 
 ## Current Position
 
-Phase: 1 of 4 (Foundation & Language Modernization)
-Plan: 3 of 3 in current phase (PHASE COMPLETE)
-Status: Phase 1 complete
-Last activity: 2026-02-05 - Completed 01-03-PLAN.md (Java 21 language modernization)
+Phase: 2 of 4 (Decoupling Systems)
+Plan: 0 of 2 in current phase
+Status: Ready to plan Phase 2
+Last activity: 2026-02-05 - Phase 1 complete, verified
 
 Progress: [███░░░░░░░] 25% (3/12 plans)
+
+## Phase 1 Completion
+
+**Verified:** 2026-02-05
+**Score:** 5/5 must-haves
+**Report:** .planning/phases/01-foundation-language-modernization/01-VERIFICATION.md
 
 ## Performance Metrics
 
@@ -54,7 +60,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- Generate golden master snapshot: `mvn test -Dtest=GoldenMasterTest` (CRITICAL before Phase 3)
+None.
 
 ### Blockers/Concerns
 
@@ -63,14 +69,14 @@ Recent decisions affecting current work:
 - Golden master testing MUST exist before any structural refactoring (critical safety net)
 - Avoid full rewrite temptation - use 50-line extraction rule
 
-**From 01-02/01-03:**
-- Golden master snapshot not yet generated (requires manual execution)
-- Before starting Phase 3, user MUST generate snapshot via `mvn test -Dtest=GoldenMasterTest`
+**From Phase 1:**
+- Golden master snapshot generated and committed (577MB, 5000 ticks)
+- Test passes in 4.2s, providing safety net for future refactoring
 
 ## Session Continuity
 
-Last session: 2026-02-05T18:57:37Z
-Stopped at: Completed 01-03-PLAN.md (Phase 1 complete)
+Last session: 2026-02-05
+Stopped at: Phase 1 verified and complete
 Resume file: None
 
 ---

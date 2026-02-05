@@ -9,19 +9,19 @@ Requirements for this modernization milestone. Each maps to roadmap phases.
 
 ### Foundation
 
-- [ ] **FOUN-01**: Project compiles and runs on Java 21
-- [ ] **FOUN-02**: Golden master test captures current gameplay behavior
-- [ ] **FOUN-03**: Behavior preservation verified after each refactoring phase
+- [x] **FOUN-01**: Project compiles and runs on Java 21
+- [x] **FOUN-02**: Golden master test captures current gameplay behavior
+- [x] **FOUN-03**: Behavior preservation verified after each refactoring phase
 
 ### Language Features
 
-- [ ] **LANG-01**: Vec class converted to record with value semantics
-- [ ] **LANG-02**: Cost/resource data represented as records
+- [x] **LANG-01**: Vec class converted to record with value semantics
+- [x] **LANG-02**: Cost/resource data represented as records
 - [ ] **LANG-03**: Entity hierarchy sealed with explicit permitted subtypes
 - [ ] **LANG-04**: Job interface sealed with explicit permitted implementations
-- [ ] **LANG-05**: instanceof checks replaced with pattern matching
-- [ ] **LANG-06**: Switch statements modernized to switch expressions where applicable
-- [ ] **LANG-07**: var used for local variables where type is obvious
+- [x] **LANG-05**: instanceof checks replaced with pattern matching
+- [x] **LANG-06**: Switch statements modernized to switch expressions where applicable
+- [x] **LANG-07**: var used for local variables where type is obvious
 
 ### Design Patterns
 
@@ -78,14 +78,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUN-01 | Phase 1 | Pending |
-| FOUN-02 | Phase 1 | Pending |
-| FOUN-03 | Phase 1 | Pending |
-| LANG-01 | Phase 1 | Pending |
-| LANG-02 | Phase 1 | Pending |
-| LANG-05 | Phase 1 | Pending |
-| LANG-06 | Phase 1 | Pending |
-| LANG-07 | Phase 1 | Pending |
+| FOUN-01 | Phase 1 | Complete |
+| FOUN-02 | Phase 1 | Complete |
+| FOUN-03 | Phase 1 | Complete |
+| LANG-01 | Phase 1 | Complete |
+| LANG-02 | Phase 1 | Complete |
+| LANG-05 | Phase 1 | Complete |
+| LANG-06 | Phase 1 | Complete |
+| LANG-07 | Phase 1 | Complete |
 | PTRN-01 | Phase 2 | Pending |
 | PTRN-02 | Phase 2 | Pending |
 | PTRN-03 | Phase 2 | Pending |
@@ -107,4 +107,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 - Roadmap created with full traceability*
+*Last updated: 2026-02-05 - Phase 1 complete (8 requirements satisfied)*
