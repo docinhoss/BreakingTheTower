@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.mojang.tower.event.*;
+
 /**
  * Headless game runner for deterministic golden master testing.
  * Runs the game without rendering and captures state each tick.
@@ -47,6 +49,9 @@ public class GameRunner {
         // Reset seed counter for reproducibility
         entitySeedCounter = 0;
 
+        // Reset EventBus to clear any state from previous test runs
+        EventBus.reset();
+
         // Enable deterministic mode for Entity and Job random generation
         // This MUST be set BEFORE creating Island (which creates entities)
         Entity.setTestSeed(FIXED_SEED);
@@ -55,6 +60,14 @@ public class GameRunner {
         // Create minimal components for headless operation
         HeadlessTowerComponent tower = new HeadlessTowerComponent();
         Island island = new Island(tower, createDummyImage());
+
+        // Subscribe to EffectEvent to handle Puff/InfoPuff creation via events
+        EventBus.subscribe(EffectEvent.class, event -> {
+            switch (event) {
+                case PuffEffect(var x, var y) -> island.addEntity(new Puff(x, y));
+                case InfoPuffEffect(var x, var y, var img) -> island.addEntity(new InfoPuff(x, y, img));
+            }
+        });
 
         // No longer need reflection-based seeding - entities are seeded at construction
 
