@@ -87,9 +87,9 @@ public class Peon extends Entity
                 }                  
             };
             Entity e = type == 0 ? getRandomTarget(30, 15, monsterFilter) : getRandomTarget(70, 80, monsterFilter);
-            if (e instanceof Monster)
+            if (e instanceof Monster monster)
             {
-                setJob(new Job.Hunt((Monster) e));
+                setJob(new Job.Hunt(monster));
             }
         }
 
