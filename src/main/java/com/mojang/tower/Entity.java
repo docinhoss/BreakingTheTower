@@ -3,7 +3,8 @@ package com.mojang.tower;
 import java.awt.Graphics2D;
 import java.util.Random;
 
-public class Entity implements Comparable<Entity>
+public sealed class Entity implements Comparable<Entity>
+    permits FarmPlot, House, InfoPuff, Monster, Peon, Puff, Rock, Tower, Tree
 {
     /**
      * Test support: when non-null, new entities use this as base seed.
