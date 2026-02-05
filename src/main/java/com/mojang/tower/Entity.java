@@ -5,13 +5,36 @@ import java.util.Random;
 
 public class Entity implements Comparable<Entity>
 {
+    /**
+     * Test support: when non-null, new entities use this as base seed.
+     * Each entity increments the counter for unique but deterministic seeds.
+     * Package-private for test access.
+     */
+    static Long testSeedBase = null;
+    private static int testSeedCounter = 0;
+
+    /**
+     * Resets the test seed mechanism. Call before each test run.
+     */
+    static void setTestSeed(Long seed) {
+        testSeedBase = seed;
+        testSeedCounter = 0;
+    }
+
     public double x, y, r;
     public double xr, yr;
 
     protected Island island;
     protected Bitmaps bitmaps;
-    protected Random random = new Random();
+    protected Random random = createRandom();
     protected boolean alive = true;
+
+    private static Random createRandom() {
+        if (testSeedBase != null) {
+            return new Random(testSeedBase + testSeedCounter++);
+        }
+        return new Random();
+    }
 
     public Entity(double x, double y, double r)
     {
