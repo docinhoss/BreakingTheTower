@@ -7,6 +7,9 @@ import java.awt.image.*;
 import java.io.IOException;
 import java.util.Collections;
 
+import com.mojang.tower.event.EventBus;
+import com.mojang.tower.event.SelectSound;
+
 public class TowerComponent extends Canvas implements Runnable, MouseListener, MouseMotionListener, KeyListener
 {
     public static final int TICKS_PER_SECOND = 30;
@@ -449,7 +452,7 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
                         if (selectedHouseType!=i)
                         {
                             selectedHouseType = i;
-                            Sounds.play(new Sound.Select());
+                            EventBus.publish(new SelectSound());
                         }
                     }
                 }

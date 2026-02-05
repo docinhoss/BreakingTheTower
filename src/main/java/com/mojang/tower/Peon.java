@@ -3,6 +3,10 @@ package com.mojang.tower;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
+import com.mojang.tower.event.EventBus;
+import com.mojang.tower.event.DeathSound;
+import com.mojang.tower.event.DingSound;
+
 public class Peon extends Entity
 {
     private static final int[] animSteps = { 0, 1, 0, 2 };
@@ -55,7 +59,7 @@ public class Peon extends Entity
 
     public void die()
     {
-        Sounds.play(new Sound.Death());
+        EventBus.publish(new DeathSound());
         island.population--;
         if (type == 1)
         {
@@ -212,7 +216,7 @@ public class Peon extends Entity
             hp+=10;
             maxHp+=10;
             level++;
-            Sounds.play(new Sound.Ding());
+            EventBus.publish(new DingSound());
         }
     }
 }

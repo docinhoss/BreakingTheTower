@@ -2,6 +2,9 @@ package com.mojang.tower;
 
 import java.util.Random;
 
+import com.mojang.tower.event.EventBus;
+import com.mojang.tower.event.SpawnWarriorSound;
+
 public class Job
 {
     /**
@@ -72,7 +75,7 @@ public class Job
                 island.resources.wood -= House.WOOD_PER_WARRIOR;
                 peon.setType(1);
                 ((House)target).puff();
-                Sounds.play(new Sound.SpawnWarrior());
+                EventBus.publish(new SpawnWarriorSound());
             }
             peon.setJob(null);
         }

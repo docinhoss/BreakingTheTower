@@ -19,36 +19,3 @@ public sealed interface SoundEvent permits
     MonsterDeathSound,
     WinSound {
 }
-
-/** Triggered when player selects a building type in the UI. */
-record SelectSound() implements SoundEvent {}
-
-/** Triggered when placing a new building or planting a tree. */
-record PlantSound() implements SoundEvent {}
-
-/** Triggered when a building is destroyed. */
-record DestroySound() implements SoundEvent {}
-
-/** Triggered when a peon deposits a gathered resource. */
-record GatherSound() implements SoundEvent {}
-
-/** Triggered when a building finishes construction. */
-record FinishBuildingSound() implements SoundEvent {}
-
-/** Triggered when a peon spawns from a residence. */
-record SpawnSound() implements SoundEvent {}
-
-/** Triggered when a peon converts to a warrior at barracks. */
-record SpawnWarriorSound() implements SoundEvent {}
-
-/** Triggered when a peon levels up. */
-record DingSound() implements SoundEvent {}
-
-/** Triggered when a peon dies. */
-record DeathSound() implements SoundEvent {}
-
-/** Triggered when a monster dies. */
-record MonsterDeathSound() implements SoundEvent {}
-
-/** Triggered when the player wins (tower destroyed). */
-record WinSound() implements SoundEvent {}
