@@ -75,13 +75,14 @@ Plans:
   1. NavigationGrid interface exists for walkability/collision queries
   2. Island implements NavigationGrid (pathfinding can query the world)
   3. Entity hierarchy is sealed with explicit permits clause
-  4. Job interface is sealed with explicit permitted implementations
+  4. Job class is sealed with explicit permitted implementations
   5. Golden master tests still pass (behavior preserved)
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md — NavigationGrid interface + Island implements it + MovementSystem uses interface (Wave 1)
+- [ ] 04-02-PLAN.md — Sealed Entity hierarchy with 9 final subclasses (Wave 2)
+- [ ] 04-03-PLAN.md — Sealed Job class with 6 final nested subclasses (Wave 2)
 
 ## Progress
 
@@ -93,7 +94,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Foundation & Language Modernization | 3/3 | ✓ Complete | 2026-02-05 |
 | 2. Decoupling Systems | 2/2 | ✓ Complete | 2026-02-05 |
 | 3. Movement Extraction | 3/3 | ✓ Complete | 2026-02-05 |
-| 4. Navigation & Sealed Hierarchies | 0/2 | Not started | - |
+| 4. Navigation & Sealed Hierarchies | 0/3 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-05*
