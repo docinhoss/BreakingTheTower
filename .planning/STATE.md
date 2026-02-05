@@ -48,11 +48,12 @@ Progress: [██████████░] 83% (10/12 plans)
 
 ## Phase 4 Progress
 
-**Plans:** 3/4 complete
+**Plans:** 3/4 complete (04-01, 04-02, 04-03)
 **Infrastructure established:**
 - NavigationGrid interface in navigation package (04-01)
 - Island implements NavigationGrid (04-01)
 - MovementSystem depends on interface, not concrete Island (04-01)
+- Entity sealed class with 9 final subclasses (04-02)
 - Job sealed class with 6 final nested subclasses (04-03)
 
 ## Performance Metrics
@@ -105,6 +106,7 @@ Recent decisions affecting current work:
 - 03-02: Initialize MovementSystem before Island creation to handle entity ticks during construction
 - 03-03: Use instanceof check instead of switch for Monster (only care about Blocked case)
 - 04-01: NavigationGrid interface with 3 methods matching Island's API (focused interface)
+- 04-02: All Entity subclasses marked final (no intermediate sealed classes needed)
 - 04-03: Job remains sealed class (not interface) to preserve shared mutable state
 
 ### Pending Todos
@@ -136,12 +138,13 @@ None.
 - NavigationGrid abstraction in place
 - Future pathfinding can depend on interface rather than Island
 - Clean dependency inversion established
+- Entity sealed hierarchy enables exhaustive pattern matching on entity types
 - Job sealed hierarchy enables exhaustive pattern matching on job types
 
 ## Session Continuity
 
-Last session: 2026-02-05T20:30:00Z
-Stopped at: Completed 04-03-PLAN.md (Seal Job Class)
+Last session: 2026-02-05T20:18:00Z
+Stopped at: Completed 04-02-PLAN.md (Seal Entity Class Hierarchy)
 Resume file: None
 
 ---
