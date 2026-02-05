@@ -40,11 +40,11 @@ See `.planning/milestones/v1-ROADMAP.md` for archived v1 roadmap.
   3. Running the same scenario twice produces identical peon movement
   4. Game maintains 30 tps with 20 peons pathfinding simultaneously
   5. Golden master test still passes (determinism preserved)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
+- [ ] 05-01-PLAN.md - Implement A* algorithm with deterministic types and tests
+- [ ] 05-02-PLAN.md - Integrate PathfindingService with Peon path following
 
 ### Phase 6: Unreachable Handling
 **Goal**: Peons detect and abandon unreachable targets quickly
@@ -82,10 +82,10 @@ Plans:
 | 2. Decoupling | v1.0 | 2/2 | Complete | 2026-02-05 |
 | 3. Movement | v1.0 | 3/3 | Complete | 2026-02-05 |
 | 4. Navigation | v1.0 | 3/3 | Complete | 2026-02-05 |
-| 5. Core A* and Integration | v2 | 0/? | Not started | - |
+| 5. Core A* and Integration | v2 | 0/2 | Planned | - |
 | 6. Unreachable Handling | v2 | 0/? | Not started | - |
 | 7. Dynamic Recalculation | v2 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-05*
-*Last updated: 2026-02-05 — v2 phases added*
+*Last updated: 2026-02-05 - Phase 5 planned (2 plans)*
