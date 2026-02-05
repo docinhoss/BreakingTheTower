@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** A clean, extensible architecture that makes adding pathfinding straightforward
-**Current focus:** Phase 3 (Movement Extraction) - Plan 01 Complete
+**Current focus:** Phase 3 (Movement Extraction) - Plan 02 Complete
 
 ## Current Position
 
 Phase: 3 of 4 (Movement Extraction)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-05 - Completed 03-01-PLAN.md (MovementSystem Infrastructure)
+Last activity: 2026-02-05 - Completed 03-02-PLAN.md (Peon Movement Extraction)
 
-Progress: [██████░░░░] 50% (6/12 plans)
+Progress: [███████░░░] 58% (7/12 plans)
 
 ## Phase 1 Completion
 
@@ -36,18 +36,19 @@ Progress: [██████░░░░] 50% (6/12 plans)
 ## Phase 3 Progress
 
 **Started:** 2026-02-05
-**Plans:** 1/3 complete
+**Plans:** 2/3 complete
 **Infrastructure established:**
 - MovementSystem service via ServiceLocator
 - MovementRequest/MovementResult records
-- Ready for Peon (02) and Monster (03) extraction
+- Peon movement extraction complete
+- Ready for Monster (03) extraction
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 5 min
-- Total execution time: 31 min
+- Total execution time: 33 min
 
 **By Phase:**
 
@@ -55,11 +56,11 @@ Progress: [██████░░░░] 50% (6/12 plans)
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 15 min | 5 min |
 | 02-decoupling | 2 | 13 min | 6.5 min |
-| 03-movement | 1 | 3 min | 3 min |
+| 03-movement | 2 | 5 min | 2.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (8 min), 02-01 (5 min), 02-02 (8 min), 03-01 (3 min)
-- Trend: Stable velocity
+- Last 5 plans: 02-01 (5 min), 02-02 (8 min), 03-01 (3 min), 03-02 (2 min)
+- Trend: Accelerating (movement extractions faster than expected)
 
 *Updated after each plan completion*
 
@@ -87,6 +88,8 @@ Recent decisions affecting current work:
 - 02-02: Regenerate golden master after EventBus integration
 - 03-01: MovementSystem takes Island via setter (injected after Island construction)
 - 03-01: MovementResult.Blocked.blocker can be null (terrain/boundary blocking)
+- 03-02: MovementSystem allows movement when island is null (construction phase)
+- 03-02: Initialize MovementSystem before Island creation to handle entity ticks during construction
 
 ### Pending Todos
 
@@ -110,12 +113,13 @@ None.
 
 **From Phase 3:**
 - MovementSystem infrastructure ready for entity integration
-- Plan 02 (Peon) is highest risk - needs careful incremental extraction
+- Plan 02 (Peon) complete - highest risk extraction successful
+- Monster extraction (Plan 03) expected to be simpler than Peon
 
 ## Session Continuity
 
-Last session: 2026-02-05T19:56:00Z
-Stopped at: Completed 03-01-PLAN.md (MovementSystem Infrastructure)
+Last session: 2026-02-05T20:01:00Z
+Stopped at: Completed 03-02-PLAN.md (Peon Movement Extraction)
 Resume file: None
 
 ---
