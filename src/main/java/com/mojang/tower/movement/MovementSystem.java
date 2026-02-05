@@ -24,18 +24,25 @@ public final class MovementSystem {
      * If movement succeeds, updates entity position and returns Moved.
      * If blocked, position unchanged and returns Blocked with blocker reference.
      *
+     * During Island construction (before setIsland is called), movement is
+     * allowed without collision checking since entities are placed at
+     * verified-free positions.
+     *
      * @param request the movement request containing entity and target position
      * @return MovementResult indicating success or blocking entity
-     * @throws IllegalStateException if island not set
      */
     public MovementResult move(MovementRequest request) {
-        if (island == null) {
-            throw new IllegalStateException("MovementSystem.island not initialized. Call setIsland() first.");
-        }
-
         Entity entity = request.entity();
         double targetX = request.targetX();
         double targetY = request.targetY();
+
+        // During Island construction, island reference not yet set.
+        // Allow movement without collision check (entities placed at free positions).
+        if (island == null) {
+            entity.x = targetX;
+            entity.y = targetY;
+            return new MovementResult.Moved(targetX, targetY);
+        }
 
         if (island.isFree(targetX, targetY, entity.r, entity)) {
             entity.x = targetX;
