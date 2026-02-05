@@ -8,9 +8,17 @@ A modernized version of "Breaking the Tower," Notch's Java-based RTS/god game wh
 
 A clean, extensible architecture that makes adding new systems (starting with pathfinding) straightforward without fighting the existing code.
 
-## Current State (v1 Shipped)
+## Current Milestone: v2 Pathfinding
 
-**Shipped:** 2026-02-05
+**Goal:** Implement intelligent pathfinding so peons navigate around obstacles instead of walking in straight lines.
+
+**Target features:**
+- A* pathfinding algorithm implementation
+- Path caching for frequently traveled routes
+- Dynamic path recalculation when obstacles change
+
+## v1 Foundation (Shipped: 2026-02-05)
+
 **Codebase:** 4,284 lines of Java (src/main + src/test)
 **Tech Stack:** Java 21, Maven, AWT/Java2D, JUnit 5
 
@@ -97,4 +105,4 @@ This is Notch's "Breaking the Tower" - a Ludum Dare style game from the Java app
 | Golden master testing | 5000-tick snapshot validates behavior preservation | ✓ Good |
 
 ---
-*Last updated: 2026-02-05 after v1 milestone*
+*Last updated: 2026-02-05 after v2 milestone start*

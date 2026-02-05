@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** A clean, extensible architecture that makes adding pathfinding straightforward
-**Current focus:** Planning next milestone (v2 Pathfinding)
+**Current focus:** v2 Pathfinding — A*, caching, dynamic recalculation
 
 ## Current Position
 
-Phase: Ready to plan
-Plan: Not started
-Status: v1 milestone complete, ready for v2
-Last activity: 2026-02-05 — v1 milestone complete
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for v2 Pathfinding
+Last activity: 2026-02-05 — Milestone v2 started
 
-Progress: Ready for `/gsd:new-milestone`
+Progress: Defining requirements
 
 ## v1 Milestone Complete
 
@@ -71,4 +71,4 @@ Resume file: None
 
 ---
 *State initialized: 2026-02-05*
-*Last updated: 2026-02-05 — v1 milestone complete*
+*Last updated: 2026-02-05 — v2 milestone started*
