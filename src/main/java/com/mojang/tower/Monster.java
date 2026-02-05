@@ -5,6 +5,9 @@ import java.awt.Graphics2D;
 
 import com.mojang.tower.event.EventBus;
 import com.mojang.tower.event.MonsterDeathSound;
+import com.mojang.tower.movement.MovementRequest;
+import com.mojang.tower.movement.MovementResult;
+import com.mojang.tower.service.ServiceLocator;
 
 public class Monster extends Entity
 {
@@ -81,15 +84,12 @@ public class Monster extends Entity
 
         if (wanderTime > 0) wanderTime--;
 
-        double xt = x + Math.cos(rot) * 0.3 * speed;
-        double yt = y + Math.sin(rot) * 0.3 * speed;
-        if (island.isFree(xt, yt, r, this))
-        {
-            x = xt;
-            y = yt;
-        }
-        else
-        {
+        double targetX = x + Math.cos(rot) * 0.3 * speed;
+        double targetY = y + Math.sin(rot) * 0.3 * speed;
+        MovementResult result = ServiceLocator.movement().move(
+            new MovementRequest(this, targetX, targetY)
+        );
+        if (result instanceof MovementResult.Blocked) {
             rot += random.nextInt(2) * 2 - 1 * Math.PI / 2 + (random.nextDouble() - 0.5);
             wanderTime = random.nextInt(30);
         }
