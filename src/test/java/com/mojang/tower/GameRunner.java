@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.mojang.tower.event.*;
 import com.mojang.tower.movement.MovementSystem;
+import com.mojang.tower.pathfinding.PathfindingService;
 import com.mojang.tower.service.ServiceLocator;
 
 /**
@@ -70,6 +71,10 @@ public class GameRunner {
 
         // Now inject Island reference into MovementSystem
         movementSystem.setNavigationGrid(island);
+
+        // Initialize PathfindingService with Island as NavigationGrid
+        PathfindingService pathfindingService = new PathfindingService(island);
+        ServiceLocator.provide(pathfindingService);
 
         // Subscribe to EffectEvent to handle Puff/InfoPuff creation via events
         EventBus.subscribe(EffectEvent.class, event -> {
