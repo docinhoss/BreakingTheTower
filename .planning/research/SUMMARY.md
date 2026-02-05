@@ -1,380 +1,275 @@
 # Project Research Summary
 
-**Project:** Breaking the Tower - Java 1.6 to Java 21 Migration
-**Domain:** RTS/God Game Modernization
+**Project:** Breaking the Tower - v2 Pathfinding Milestone
+**Domain:** A* Pathfinding Integration for RTS/God Game
 **Researched:** 2026-02-05
 **Confidence:** HIGH
 
 ## Executive Summary
 
-Breaking the Tower is a working Java 1.6 RTS/god game with entity hierarchies, job-based AI, and tick-based game loop. The modernization path to Java 21 combines language feature adoption with architectural refactoring to enable future pathfinding integration. The recommended approach is **incremental component extraction** rather than full rewrite - preserving behavior while introducing modern patterns.
+Breaking the Tower v2 adds A* pathfinding to an existing Java 21 RTS/god game where peons currently move in straight lines and bump randomly when colliding. Research across stack, features, architecture, and pitfalls converges on a clear recommendation: implement A* from scratch rather than using external libraries, with determinism as the paramount design constraint.
 
-The highest-value modernizations are records (Vec class becomes 20 lines instead of 76), sealed entity hierarchies (enables exhaustive pattern matching), and pattern matching for instanceof (eliminates casts). The current architecture tightly couples movement execution, behavior decisions, and rendering within entity classes. Movement extraction into a dedicated system is the critical path to enabling pathfinding without rewriting the entire codebase.
+The game's existing architecture was specifically designed for this integration. The v1 milestone established MovementSystem as the single source of truth for movement and NavigationGrid for walkability queries. Pathfinding plugs in as a new service that computes paths using NavigationGrid, returns waypoints, and caches results. MovementSystem continues to handle actual movement execution and dynamic collision detection. This separation allows pathfinding to work at grid resolution while movement handles sub-grid precision.
 
-The primary risk is **behavioral drift** - refactoring changes the sequence of random number calls, game loop timing, or entity lifecycle processing, causing gameplay to "feel different" even when tests pass. Mitigation requires golden master testing (capture tick-by-tick state hashes) before any refactoring begins, and incremental extraction with frequent verification. The 570-line TowerComponent god class and the interleaved Peon.tick() movement logic are high-risk refactoring targets that must be approached with comprehensive behavior tests.
+The critical risk is non-determinism. The game has golden master tests verifying 5000 ticks of deterministic gameplay. Any non-determinism in pathfinding (from HashMap iteration order, floating-point tie-breaking, or request processing order) will cause test failures that are extremely difficult to debug. All data structures must use ordered collections, tie-breaking must be explicit and deterministic, and the pathfinder must be stateless between requests. Beyond determinism, the main architectural challenge is avoiding frame spikes when obstacles change (trees harvested, buildings placed) - solved through lazy path invalidation rather than immediate recalculation.
 
 ## Key Findings
 
 ### Recommended Stack
 
-Java 21 offers powerful features, but not all are equally valuable for game modernization. Records, sealed classes, and pattern matching deliver the highest value for cleaning up entity hierarchies and job systems. Virtual threads provide minimal benefit for CPU-bound game loops.
+Custom A* implementation recommended over external libraries. The game's constraints (pure Java 21, no external frameworks, small 256x256 pixel map scaling to ~96x96 grid cells, under 100 entities) make a self-contained implementation the optimal choice. A custom implementation provides full control over determinism guarantees, avoids dependency management in a pure-Java project, and requires only 200-300 lines of well-structured code.
 
 **Core technologies:**
-- **Java 21 (from 1.6)**: Records, sealed classes, pattern matching — eliminate boilerplate, enable exhaustive type checking
-- **Records**: Vec class, Cost types, MovementRequest — immutable value objects with auto-generated equals/hashCode
-- **Sealed Classes**: Entity hierarchy, Job types — document valid subtypes, enable exhaustive pattern matching
-- **Pattern Matching**: instanceof chains, switch expressions — cleaner type checks without casts
-- **var**: Local type inference — reduce redundancy where type is obvious
-- **Switch Expressions**: Replace if-else chains in HouseType, Resource handling — concise and exhaustive
+- **Custom A* Algorithm**: Pathfinding computation - standard algorithm with PriorityQueue and HashSet, determinism enforced through ordered collections and explicit tie-breaking
+- **Java 21 Records**: Immutable data structures (PathNode, Path, GridCell) - automatic equals/hashCode, pattern matching support, thread-safe by design
+- **ServiceLocator Pattern**: Service registration and access - follows existing codebase pattern, enables clean integration without tight coupling
+- **Grid Overlay System**: Discrete pathfinding on continuous world - cell size of ~4.0 world units (2x peon radius) balances path quality with performance
 
-**Version requirements:**
-- Java 21 LTS (not 17) — sequenced collections, pattern matching for switch finalized
-- No module system needed — game runs as monolithic JAR
-- No virtual threads — CPU-bound game loop doesn't benefit from I/O concurrency
-
-**Low-priority features:**
-- Virtual Threads: LOW value (game loop is CPU-bound, not I/O-bound)
-- String Templates: SKIP (removed in JDK 23, pending redesign)
-- Full ECS: Defer (current scale doesn't justify complexity)
+**Why NOT external libraries:**
+- Projects like xaguzman/pathfinding add unnecessary dependencies to a zero-dependency codebase
+- Black-box libraries may not provide determinism guarantees needed for golden master tests
+- The NavigationGrid interface already provides the abstraction layer needed
+- Full control over optimization for game-specific patterns (path caching, invalidation triggers)
 
 ### Expected Features
 
-Game architecture patterns that separate behavior, movement, and rendering concerns. The existing codebase lacks these separations, making pathfinding integration difficult.
-
 **Must have (table stakes):**
-- **State Pattern** — Peon/Monster use implicit boolean states (wanderTime, hasResource); need explicit state classes
-- **Observer Pattern** — Sounds.play() called directly from entities; need event-driven decoupling
-- **Command Pattern** — Job system partially implements this but couples to specific Peon instances
-- **Component Pattern** — Movement, rendering, AI mixed in entity classes; need separation
+- **Obstacle avoidance** - Peons walk around rocks/trees instead of repeatedly bumping into them (replaces current random deflection)
+- **Path to target** - Compute walkable route from current position to target entity/location
+- **Unreachable detection** - Properly detect when target is impossible to reach (currently only 10% chance to abandon on collision)
+- **Diagonal movement** - 8-directional pathfinding matching the game's continuous movement model (not 4-cardinal grid movement)
+- **Path recalculation on block** - When path becomes blocked (building placed, tree in the way), recompute route
 
 **Should have (competitive):**
-- **Behavior Trees** — Current job system is linear; trees enable priority-based action selection and fallback logic
-- **Spatial Partition** — Island.isFree() is O(n); quadtree reduces to O(log n), essential for pathfinding
-- **Event Queue** — Decouple when events are processed from when they're raised
-- **Service Locator** — Replace raw Singleton pattern (Sounds.instance) with abstraction
+- **Path caching** - Reuse computed paths when target unchanged, cache invalidation on world changes
+- **Path smoothing** - Remove unnecessary zigzag grid steps, produce natural-looking diagonal movement
+- **Partial paths** - When destination unreachable, return path to nearest accessible location
+- **Local avoidance** - Basic steering behaviors to prevent peon-on-peon collisions during movement
 
-**Defer (v2+):**
-- **Full ECS Architecture** — High complexity without clear benefit at current scale (~20 entity types)
-- **Object Pooling** — GC pressure not yet a problem; add if profiling shows need
-- **Dirty Flag Pattern** — Premature optimization until rendering becomes bottleneck
-
-**Anti-features (avoid):**
-- **God Classes** — TowerComponent is 570 lines mixing input, rendering, game state, timing
-- **Deep Inheritance** — Current Entity hierarchy works but resist adding more depth
-- **Hardcoded Sound Calls** — Already problematic; entities directly call Sounds.play()
-- **Boolean State Flags** — Peon.wanderTime, Job.hasResource create implicit states
-- **Polling for Events** — Checking conditions every frame instead of reacting to changes
+**Defer (future milestones):**
+- **NavMesh** - Overkill for simple tile grid
+- **Hierarchical pathfinding (HPA*)** - Only needed for maps 10x larger
+- **Flow fields** - Useful with 100+ units to single destination, not ~10-30 peons with different targets
+- **Jump Point Search** - Premature optimization, basic A* sufficient
+- **Formation movement** - Military-style squad coordination beyond casual game scope
 
 ### Architecture Approach
 
-The current architecture has working but monolithic structure from the Java applet era. Movement calculation happens inside Peon.tick() where behavior logic (job target selection) and movement logic (velocity, collision) are interleaved. The recommended refactoring is incremental component extraction while preserving behavior.
+Pathfinding integrates as a new service layer that coordinates between the grid representation (Island as PathfindingGrid) and movement execution (existing MovementSystem). The pathfinder is stateless between requests, taking current position and target as inputs, querying NavigationGrid.isWalkable() for static obstacles, and returning the next waypoint in world coordinates. MovementSystem continues to handle dynamic collision detection with entities using NavigationGrid.isFree(). This separation allows pathfinding to operate at coarse grid resolution while movement handles fine-grained collision response.
 
-**Target component boundaries:**
-1. **BehaviorSystem** — Decides what entities want to do; manages Jobs; emits MovementRequests
-2. **MovementSystem** — Executes movement; pathfinding integration point; handles collision
-3. **RenderingSystem** — Transforms and draws entities; separates visual from logic
-4. **World Layer** — Spatial queries (Island), navigation data; queryable interface
-5. **EventBus** — Decouples notifications for sounds, effects, UI updates
+**Major components:**
+1. **PathfindingGrid interface** - Extends NavigationGrid with grid-based walkability queries and coordinate conversion (world ↔ grid)
+2. **AStarPathfinder class** - Core A* algorithm using PriorityQueue for open set, HashSet for closed set, 8-directional neighbor generation
+3. **PathCache class** - Per-entity path caching with goal-based and time-based invalidation (5 second staleness threshold)
+4. **PathfindingService class** - High-level service coordinating grid conversion, path computation, caching, and invalidation
+5. **Island implementation** - Adds PathfindingGrid methods using existing isOnGround() bitmap for walkability at grid resolution
+6. **Peon/Monster integration** - Replace direct angle calculation with PathfindingService.getNextPosition() query
 
-**Major refactoring targets:**
-- **Peon.tick() lines 109-156** — Movement interleaved with behavior; extract to MovementSystem
-- **TowerComponent (570 lines)** — God class; extract GameState, InputHandler, UIRenderer
-- **Job classes** — Convert to sealed interface with record implementations for stateless jobs
-- **Entity hierarchy** — Add sealed permits clause for exhaustive pattern matching
-- **Vec class (76 lines)** — Convert to record (reduces to ~20 lines)
-
-**Critical integration point:**
-The MovementSystem becomes the single place where pathfinding plugs in. Current direct movement (beeline to target) and future A* pathfinding both implement MovementStrategy interface. This enables pathfinding without touching Job classes, House logic, or combat.
-
-**Supporting infrastructure needed:**
-- Vec2 record (immutable position type)
-- NavigationGrid (queryable walkability for pathfinding)
-- MovementRequest (intent from behavior to movement)
-- MovementStrategy interface (swappable algorithms)
+**Build order:** Foundation types (GridCell, Path records) → A* algorithm + unit tests → Island grid implementation → Service layer (cache, service, ServiceLocator registration) → Entity integration (Peon, Monster) → Golden master validation
 
 ### Critical Pitfalls
 
-The research identified 11 pitfalls across critical, moderate, and minor severity. The top five that directly impact the refactoring roadmap:
+1. **Non-deterministic data structures** - Using HashMap or HashSet without ordered alternatives causes iteration order to vary between runs, breaking golden master tests. Prevention: Use TreeMap/TreeSet with explicit Comparator, or LinkedHashMap/LinkedHashSet. Add determinism validation test (run twice, assert identical output). Address in Phase 1 - bake into core A* design.
 
-1. **Breaking Random Number Sequence Determinism** — Refactoring changes order of random.nextX() calls, causing different gameplay outcomes. Even identical seed produces different behavior. Prevention: Establish golden master testing (capture tick-by-tick state hashes) before ANY refactoring. Record baseline gameplay with fixed seed.
+2. **Floating-point tie-breaking non-determinism** - When two nodes have equal f-scores, floating-point precision errors cause non-deterministic comparison results. Prevention: Use integer arithmetic for g/h costs, or explicit secondary tie-breaker using deterministic node properties (e.g., gridX * 1000 + gridY). Avoid Math.sqrt() in heuristic comparisons. Address in Phase 1.
 
-2. **Game Loop Timing Alterations** — TowerComponent.run() uses fixed timestep accumulator (30 ticks/second). Changes to timing logic cause physics speed changes, animation desync, spiral of death. Prevention: Do NOT refactor game loop until comprehensive behavior tests exist. Measure actual ticks/second before changes. Preserve accumulator pattern.
+3. **Path request order sensitivity** - Multiple peons requesting paths in same tick with shared mutable state produces order-dependent results. Prevention: Pathfinder must be stateless between requests, process in deterministic entity list order. Address in Phase 1 - design for multi-request from start.
 
-3. **Entity Collection Modification During Iteration** — Island.tick() removes dead entities during iteration using manual index adjustment (i--). Modern patterns (streams, for-each) break this. Prevention: Preserve iteration pattern initially; use deferred removal queues; test rapid spawn/death cycles.
+4. **Pathfinding spike on obstacle change** - Synchronous recalculation of all affected paths when building placed or tree harvested causes 100+ ms frame freeze. Prevention: Lazy invalidation (mark invalid, recalculate on next use), path splicing (recompute only blocked segment), budget spreading (max N recalculations per tick). Address in Phase 3.
 
-4. **Attempting Full Rewrite Instead of Incremental Refactoring** — Temptation to "fix it properly" with clean design leads to weeks of work discarded when subtle bugs emerge. Prevention: 50-line rule (never extract more than 50 lines without testing); Strangler Fig pattern (new code wraps old, gradually takes over); preserve behavior first, improve structure second.
-
-5. **Breaking Tight Coupling Without Preserving Call Timing** — Replacing direct calls (island.population--) with events may defer the decrement, breaking code that checks population immediately. Prevention: Start with synchronous events; document call order dependencies; test state consistency immediately after events.
-
-**Additional notable pitfalls:**
-- Premature state machine extraction from boolean flags changes implicit transition rules
-- Overusing Java 21 features where simplicity suffices (streams may change execution order)
-- God class decomposition without behavior tests (TowerComponent's synchronized blocks prevent race conditions)
+5. **Unbounded search space** - Path requests to distant or unreachable destinations explore entire map before failing. Prevention: Node exploration limit (~2000 nodes), early rejection (verify destination walkable before search), graceful failure mode. Address in Phase 1 with hard limits.
 
 ## Implications for Roadmap
 
-Based on combined research, the migration requires four major phases with specific ordering constraints. Movement extraction is the critical path to pathfinding enablement.
+Based on combined research, pathfinding implementation naturally divides into four phases with clear dependencies and deliverables. The critical insight is that determinism must be enforced from day one - retrofitting determinism into non-deterministic code is nearly impossible. Phases build incrementally, with each phase adding functionality while preserving determinism guarantees.
 
-### Phase 1: Foundation & Quick Wins
-**Rationale:** Establish safety infrastructure and gain low-risk modernization wins before touching core architecture. Golden master testing must exist before any refactoring to detect behavioral drift.
+### Phase 1: Core A* Algorithm (Foundation)
 
-**Delivers:**
-- Golden master test harness (tick-by-tick state verification)
-- Java 21 syntax modernization (var, switch expressions, pattern matching instanceof)
-- Vec record conversion
-- Resource loading abstraction
-
-**Addresses (from FEATURES.md):**
-- No architectural patterns yet; pure language modernization
-
-**Avoids (from PITFALLS.md):**
-- #1 Random determinism (golden master detects sequence changes)
-- #10 Resource loading path changes (test in JAR form)
-
-**Stack elements (from STACK.md):**
-- Records (Vec class: 76 lines to ~20 lines)
-- var adoption (immediate readability)
-- Pattern matching instanceof (remove casts)
-- Switch expressions (HouseType.getDescription())
-
-**Critical actions:**
-- Record baseline gameplay with fixed seed (1000 ticks minimum)
-- Capture state hashes every 10 ticks (entity positions, population, resources, RNG state)
-- Create determinism test suite that compares current vs baseline hashes
-- DO NOT proceed to Phase 2 without passing golden master tests
-
-### Phase 2: Decoupling Systems
-**Rationale:** Break tight coupling between entities and services (sound, effects) without changing movement architecture. Establishes event-driven communication patterns needed for later phases.
+**Rationale:** Establishes deterministic pathfinding foundation. All determinism pitfalls (P1, P2, P3) must be addressed in initial implementation - retrofitting determinism is extremely difficult. This phase delivers working pathfinding without integration, allowing algorithm validation in isolation.
 
 **Delivers:**
-- EventBus implementation (synchronous initially)
-- Sound system decoupling (all Sounds.play() calls become events)
-- Service Locator pattern for global services
-- GameState extraction from TowerComponent (State pattern for boolean flags)
+- Grid coordinate system with conversion between world and grid space
+- PathNode, Path, GridCell records with deterministic equality
+- A* algorithm with explicit tie-breaking and node exploration limits
+- Unit tests verifying correct paths, unreachable target handling, and determinism (same input produces same output across runs)
 
-**Addresses (from FEATURES.md):**
-- Observer Pattern (decouple event producers from consumers)
-- Service Locator (replace Singleton anti-pattern)
-- State Pattern (eliminate titleScreen, won, paused, scrolling boolean flags)
+**Addresses features:**
+- Table stakes: obstacle avoidance, path computation, unreachable detection, diagonal movement
+- Stack: Custom A* with Java 21 records, PriorityQueue/TreeSet for deterministic collections
 
-**Avoids (from PITFALLS.md):**
-- #5 Premature state machine extraction (document current state transitions first)
-- #6 Breaking event timing (start with synchronous events, preserve call order)
+**Avoids pitfalls:**
+- P1: Non-deterministic data structures (use TreeSet/LinkedHashMap)
+- P2: Floating-point tie-breaking (integer coordinates, explicit secondary comparator)
+- P3: Request order sensitivity (stateless pathfinder)
+- P4: Inadmissible heuristic (Euclidean for 8-directional movement)
+- P6: Unbounded search (hard node limit of 2000)
 
-**Architecture (from ARCHITECTURE.md):**
-- EventBus for sounds, effects, UI notifications
-- Extract GameState, InputHandler from TowerComponent
-- Preserve TowerComponent game loop (too risky to refactor yet)
+**Research flag:** Standard A* implementation, well-documented patterns, skip deeper research.
 
-**Research flag:** Standard patterns (Observer, Service Locator well-documented); skip deep research.
+### Phase 2: Integration with Movement System
 
-### Phase 3: Movement & Behavior Extraction
-**Rationale:** This is the critical path to pathfinding. Movement logic must be separated from Peon/Monster classes before pathfinding can be integrated. Highest risk phase due to tight coupling in Peon.tick() lines 109-156.
+**Rationale:** Connects pathfinding to actual entity movement. Dependencies: Phase 1 provides working pathfinder, existing MovementSystem handles execution. This phase makes pathfinding visible in gameplay while maintaining MovementSystem as single source of truth for position updates.
 
 **Delivers:**
-- MovementSystem (single integration point for pathfinding)
-- BehaviorSystem (Job management separated from movement execution)
-- MovementStrategy interface (DirectMovement, WanderMovement)
-- NavigationGrid abstraction (wraps Island collision queries)
-- MovementRequest type (intent from behavior to movement)
-- Component-based entity structure (movement, behavior, render components)
+- Island implements PathfindingGrid interface with grid-based walkability queries
+- PathfindingService registered with ServiceLocator
+- Peon and Monster query PathfindingService.getNextPosition() instead of direct angle calculation
+- MovementResult.Blocked triggers path invalidation
+- Waypoint advancement when entity reaches current target position
 
-**Addresses (from FEATURES.md):**
-- Component Pattern (extract movement, behavior into components)
-- Command Pattern (Jobs emit MovementRequests instead of direct movement)
-- Spatial Partition preparation (NavigationGrid enables future optimization)
+**Addresses features:**
+- Table stakes: Full integration of obstacle avoidance and target pathfinding
+- Architecture: Service layer pattern, MovementSystem/PathfindingService separation
 
-**Avoids (from PITFALLS.md):**
-- #2 God class decomposition without tests (MovementSystem extracted incrementally)
-- #3 Collection modification during iteration (deferred entity lifecycle processing)
-- #4 Full rewrite temptation (extract one concern at a time)
+**Avoids pitfalls:**
+- Integration preserves determinism from Phase 1
+- Clear separation between pathfinding (coarse grid) and movement execution (fine collision)
 
-**Architecture (from ARCHITECTURE.md):**
-- BehaviorSystem decides intent, emits MovementRequests
-- MovementSystem calculates path (PATHFINDING INTEGRATION POINT), applies velocity
-- Jobs no longer contain movement steering logic
-- Peon/Monster share MovementComponent (eliminates duplication)
+**Research flag:** Integration point verification needed - ensure grid resolution matches entity collision radii, validate waypoint following doesn't cause oscillation.
 
-**Critical integration points:**
-- MovementStrategy.getNextPosition() — where pathfinding plugs in
-- NavigationGrid.isWalkable() — abstracts Island.isFree() for pathfinding
-- MovementRequest callbacks — notify behavior when arrival occurs
+### Phase 3: Path Caching and Optimization
 
-**Research flag:** NEEDS DEEPER RESEARCH during planning. Component extraction from tightly coupled code is complex. May need specific refactoring pattern research (Strangler Fig, Branch by Abstraction).
-
-### Phase 4: Entity Hierarchy Modernization
-**Rationale:** With movement/behavior separated, the entity hierarchy can be modernized using sealed classes and pattern matching. Enables exhaustive type checking and cleaner dispatching.
+**Rationale:** Eliminates per-tick recalculation overhead. Dependencies: Phase 2 provides working integrated system. Without caching, every peon recalculates path every tick (10 peons * 30 tps = 300 path requests/second). Caching reduces computation by ~95% for steady movement.
 
 **Delivers:**
-- Sealed Entity hierarchy with permits clause
-- Sealed Job interface with record implementations (for stateless jobs)
-- Pattern matching for switch in entity type dispatch
-- Intermediate sealed interfaces (MobileEntity, StaticEntity, EffectEntity)
+- PathCache with per-entity storage and goal-based invalidation
+- Time-based staleness (5 second expiry handles untracked world changes)
+- Event-driven invalidation on obstacle changes (building placed, tree harvested)
+- Per-tick pathfinding budget (limit simultaneous computations to prevent spikes)
+- Path following logic that reuses cached path until blocked or stale
 
-**Addresses (from FEATURES.md):**
-- Table stakes patterns already complete; this is polish
+**Addresses features:**
+- Should-have: Path caching for performance
+- Competitive edge: Smooth performance even with many moving entities
 
-**Stack elements (from STACK.md):**
-- Sealed classes (Entity permits Peon, Monster, House, Tree, Rock, FarmPlot, Puff, InfoPuff)
-- Pattern matching for switch (exhaustive entity type handling)
-- Records for Job implementations (Job.Goto, Job.Hunt as records)
+**Avoids pitfalls:**
+- P5: Pathfinding spike on obstacle change (lazy invalidation, budget system)
+- P7: Per-tick recalculation overhead (event-driven invalidation)
+- P8: Memory allocation in hot path (object pooling if profiling shows GC pressure)
 
-**Avoids (from PITFALLS.md):**
-- #7 Overusing Java 21 features (only apply where clear benefit exists)
-- #11 Instanceof pattern matching side effects (convert one at a time, test both branches)
+**Research flag:** Performance profiling needed - validate 30 tps maintained with 20+ peons, check for GC pressure under heavy pathfinding load.
 
-**Research flag:** Standard patterns (sealed classes well-documented); skip deep research.
+### Phase 4: Dynamic Obstacle Handling
 
-### Phase 5: Game Loop & Rendering Refactoring
-**Rationale:** This is the highest-risk remaining refactoring. Only attempt after all behavior tests pass and movement/behavior systems are stable. TowerComponent.run() timing logic must be preserved.
+**Rationale:** Handles runtime world changes gracefully. Dependencies: Phase 3 provides caching infrastructure. This phase refines path invalidation and recalculation to avoid visual jitter and oscillation when obstacles appear/disappear.
 
 **Delivers:**
-- RenderingSystem extraction from entity classes
-- Preserved game loop timing (30 ticks/second accumulator)
-- Thread safety for input/rendering (preserve synchronized blocks)
+- Path splicing (preserve valid path segments, only recompute blocked portion)
+- Recalculation throttling (minimum interval between updates to prevent oscillation)
+- Commit distance (finish movement to current waypoint before accepting new path)
+- Hysteresis in path selection (require significant cost difference to switch routes)
+- Integration with building placement and resource harvesting systems
 
-**Avoids (from PITFALLS.md):**
-- #2 Game loop timing alterations (measure ticks/second before/after; preserve accumulator)
-- #8 God class decomposition without tests (extract one responsibility at a time)
-- #9 AWT/Swing threading violations (keep rendering on game thread)
+**Addresses features:**
+- Table stakes: Path recalculation on block (refined from basic Phase 2 implementation)
+- Polish: Smooth, natural-looking path updates without visible jitter
 
-**Research flag:** Standard patterns, but HIGH RISK. Needs careful characterization testing. Consider skipping if time-constrained.
+**Avoids pitfalls:**
+- P10: Path recalculation visible jitter (commit distance, smoothing buffer)
+- P12: Oscillation between two states (hysteresis, cooldown periods)
+
+**Research flag:** Standard dynamic pathfinding patterns, may benefit from user feedback on feel during implementation.
+
+### Phase 5: Polish and Path Smoothing (Optional)
+
+**Rationale:** Improves visual quality of paths. Dependencies: Phases 1-4 provide fully functional pathfinding. This phase is optional polish that doesn't affect gameplay correctness.
+
+**Delivers:**
+- String-pulling algorithm to remove unnecessary waypoints
+- Line-of-sight checks between waypoints for straight-line shortcuts
+- Smoothed paths that look natural rather than grid-aligned
+- Deterministic smoothing (same input produces same smoothed output)
+
+**Addresses features:**
+- Should-have: Path smoothing for natural movement
+- Differentiators: Professional-looking AI movement
+
+**Avoids pitfalls:**
+- P9: Zigzag path on grid (string pulling, line-of-sight smoothing)
+- Maintains determinism during smoothing operations
+
+**Research flag:** Path smoothing algorithms well-documented, optional phase can be deferred to future milestone if time constrained.
 
 ### Phase Ordering Rationale
 
-**Why this order:**
-1. **Foundation first** — Golden master testing detects behavioral drift; must exist before ANY structural changes
-2. **Decoupling before extraction** — EventBus and Service Locator establish patterns used by later phases
-3. **Movement before hierarchy** — Pathfinding integration is higher priority than sealed class polish
-4. **Game loop last** — Highest risk; only attempt when everything else is stable
-
-**Dependencies discovered:**
-- MovementSystem requires NavigationGrid (Vec2 record foundation)
-- BehaviorSystem requires MovementRequest type
-- Sealed classes require Component extraction (otherwise hierarchy is still monolithic)
-- Rendering extraction requires stable game loop (can't refactor both simultaneously)
-
-**Pitfall avoidance strategy:**
-- Phase 1 addresses #1, #10 (determinism and resource loading)
-- Phase 2 addresses #5, #6 (state machines and event timing)
-- Phase 3 addresses #2, #3, #4 (the hardest pitfalls; incremental extraction critical)
-- Phase 4 addresses #7, #11 (polish pitfalls only after behavior locked down)
-- Phase 5 addresses #2, #8, #9 (game loop is most fragile)
+- **Phase 1 before all others:** Determinism cannot be retrofitted. Non-deterministic foundation makes debugging impossible once integrated.
+- **Phase 2 before caching:** Need to see pathfinding working in gameplay before optimizing. Validates algorithm correctness and integration points.
+- **Phase 3 before dynamic handling:** Simple caching establishes infrastructure. Dynamic obstacle handling builds on cache invalidation mechanisms.
+- **Phase 4 timing:** Dynamic obstacles are gameplay-critical (buildings, harvesting) but can work with naive invalidation initially. Refine after basic system proven.
+- **Phase 5 optional:** Path smoothing is pure polish. Defer if timeline tight, doesn't affect core functionality.
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
+**Phases needing validation during implementation:**
+- **Phase 2 (Integration):** Grid resolution tuning - cell size of 4.0 units is initial estimate, may need adjustment based on collision radius testing
+- **Phase 3 (Caching):** Performance profiling - validate assumptions about path computation cost, check for GC pressure
+- **Phase 4 (Dynamic):** User experience testing - path recalculation feel is subjective, may need iteration
 
-- **Phase 3 (Movement & Behavior Extraction):** Complex refactoring of tightly coupled code. May need research on:
-  - Strangler Fig pattern for incremental extraction
-  - Branch by Abstraction for parallel old/new implementations
-  - Game-specific component patterns (libGDX, gdx-ai)
-  - Collision query optimization patterns
-
-- **Phase 5 (Game Loop & Rendering):** High-risk refactoring with subtle timing issues. May need research on:
-  - Fixed timestep game loop patterns (already cited Gaffer on Games)
-  - AWT/Swing threading best practices for games
-  - Rendering pipeline patterns for 2D games
-
-Phases with standard patterns (skip research-phase):
-
-- **Phase 1:** Language feature usage well-documented in official JEPs
-- **Phase 2:** Observer, Service Locator, State patterns covered in Game Programming Patterns
-- **Phase 4:** Sealed classes and pattern matching covered in official Java docs
+**Phases with standard patterns (minimal additional research):**
+- **Phase 1 (Core A*):** Algorithm thoroughly documented, pattern matching existing implementations
+- **Phase 5 (Smoothing):** String-pulling and line-of-sight algorithms well-established
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All recommendations based on official JEPs, Oracle docs, verified sources |
-| Features | HIGH | Patterns from authoritative Game Programming Patterns book (Nystrom) |
-| Architecture | HIGH | Direct codebase analysis combined with established patterns |
-| Pitfalls | HIGH | Multiple verified sources (Gaffer on Games, official Java docs, community consensus) |
+| Stack | HIGH | Custom A* well-documented, Java 21 records ideal for immutable nodes, existing codebase patterns (ServiceLocator) proven |
+| Features | HIGH | Table stakes verified against multiple RTS implementations, anti-features explicitly identified to avoid scope creep |
+| Architecture | HIGH | v1 architecture specifically designed for pathfinding integration, integration points clear and validated against codebase |
+| Pitfalls | HIGH | Determinism pitfalls critical for this project, verified against authoritative sources (Riot Games, Random ASCII), prevention strategies well-established |
 
 **Overall confidence:** HIGH
 
-All research areas converge on consistent recommendations. The language features (records, sealed classes, pattern matching) directly support the architectural patterns (Component, Observer, State). The pitfalls align with known risks in legacy refactoring and game development.
+Research is comprehensive and cross-validated. Key recommendations (custom implementation, determinism-first approach, phased integration) supported by multiple authoritative sources and direct codebase analysis. The existing v1 architecture provides clean integration points that were explicitly designed for pathfinding in subsequent milestones.
 
 ### Gaps to Address
 
-The following areas need validation or deeper investigation during planning:
+Minor unknowns that will resolve during implementation:
 
-- **Pathfinding integration specifics:** Research identified the integration point (MovementSystem) and requirements (NavigationGrid), but actual pathfinding algorithm selection (A*, JPS, flow fields) needs evaluation during Phase 3 planning. Consider `/gsd:research-phase "Pathfinding algorithms for tile-based RTS"` when Phase 3 begins.
+- **Grid cell size tuning:** Initial recommendation of 4.0 world units based on peon radius of 1.0, but actual collision behavior may require adjustment. Easily tunable constant once integrated and tested.
+- **Cache size limits:** Initial design has unbounded per-entity cache. May need LRU eviction if memory profiling shows issues, but grid is small enough that this is unlikely.
+- **Per-tick computation budget:** Initial recommendation of max 5 path computations per tick is estimate. Adjust based on profiling with realistic entity counts and map complexity.
+- **Path smoothing algorithm choice:** Multiple smoothing algorithms available (string pulling, Catmull-Rom spline, funnel). Defer selection to Phase 5 implementation based on determinism requirements and visual results.
 
-- **Component pattern implementation details:** ARCHITECTURE.md provides the conceptual separation, but actual component lifecycle management (creation, updates, inter-component communication) needs design during Phase 3. The choice between traditional component pattern vs. lightweight ECS should be evaluated based on performance profiling.
-
-- **Testing strategy for behavioral preservation:** PITFALLS.md recommends golden master testing, but implementation details (what state to capture, how often, how to compare) need definition during Phase 1. Consider characterization testing libraries or custom harness.
-
-- **Performance impact of Java 21 features:** Records and pattern matching are generally zero-cost, but sealed class dispatch and switch expressions may have performance implications in hot paths (entity tick loops). Profile during Phase 4 before converting critical code.
-
-- **Build system modernization:** Current codebase compiles to JAR but no build configuration analyzed. Maven/Gradle setup for Java 21 needs evaluation. Ensure hot-reload feature (filesystem-based resource loading) works with new build system.
+These gaps are implementation details that don't affect the overall architecture or phase structure. They represent tuning parameters that will be refined during development.
 
 ## Sources
 
 ### Primary (HIGH confidence)
 
-**Java 21 Language Features:**
-- [Oracle Java 21 Virtual Threads](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html)
-- [JEP 441: Pattern Matching for switch](https://openjdk.org/jeps/441)
-- [JEP 395: Records](https://openjdk.org/jeps/395)
-- [JEP 409: Sealed Classes](https://openjdk.org/jeps/409)
-- [JEP 286: Local Variable Type Inference](https://openjdk.org/jeps/286)
-- [JEP 378: Text Blocks](https://openjdk.org/jeps/378)
-- [JEP 431: Sequenced Collections](https://openjdk.org/jeps/431)
-- [dev.java/learn/records](https://dev.java/learn/records/)
+**Stack Research:**
+- [Implementing A* Pathfinding in Java | Baeldung](https://www.baeldung.com/java-a-star-pathfinding) - Java implementation patterns with PriorityQueue
+- [Introduction to A* | Red Blob Games](https://www.redblobgames.com/pathfinding/a-star/introduction.html) - Authoritative A* tutorial with visualizations
+- [Pathfinding with Grids | Red Blob Games](https://www.redblobgames.com/pathfinding/grids/algorithms.html) - Grid-specific considerations
 
-**Game Programming Patterns:**
-- [Game Programming Patterns - Full Book](https://gameprogrammingpatterns.com/contents.html) — Robert Nystrom
-- [Game Programming Patterns - State](https://gameprogrammingpatterns.com/state.html)
-- [Game Programming Patterns - Observer](https://gameprogrammingpatterns.com/observer.html)
-- [Game Programming Patterns - Command](https://gameprogrammingpatterns.com/command.html)
-- [Game Programming Patterns - Component](https://gameprogrammingpatterns.com/component.html)
-- [Game Programming Patterns - Event Queue](https://gameprogrammingpatterns.com/event-queue.html)
-- [Game Programming Patterns - Service Locator](https://gameprogrammingpatterns.com/service-locator.html)
-- [Game Programming Patterns - Spatial Partition](https://gameprogrammingpatterns.com/spatial-partition.html)
+**Features Research:**
+- [Group Pathfinding & Movement in RTS Style Games | Game Developer](https://www.gamedeveloper.com/programming/group-pathfinding-movement-in-rts-style-games) - RTS pathfinding patterns
+- [Movement Costs for Pathfinders | Amit Patel](http://theory.stanford.edu/~amitp/GameProgramming/MovementCosts.html) - Diagonal costs, heuristic selection
+- [Dealing with Moving Obstacles | Amit Patel](http://theory.stanford.edu/~amitp/GameProgramming/MovingObstacles.html) - Dynamic obstacle strategies
 
-**Game Loop & Timing:**
-- [Fix Your Timestep! | Gaffer On Games](https://gafferongames.com/post/fix_your_timestep/)
+**Architecture Research:**
+- Direct codebase analysis of Breaking the Tower v1 architecture (MovementSystem, NavigationGrid, ServiceLocator patterns)
+- [Pathfinding API | gdx-ai Wiki](https://github.com/libgdx/gdx-ai/wiki/Pathfinding-API) - API design patterns
 
-**Direct Codebase Analysis:**
-- Breaking the Tower source code (full analysis performed)
+**Pitfalls Research:**
+- [Floating-Point Determinism | Random ASCII](https://randomascii.wordpress.com/2013/07/16/floating-point-determinism/) - Authoritative guide to deterministic floating-point
+- [Determinism in League of Legends | Riot Games](https://technology.riotgames.com/news/determinism-league-legends-fixing-divergences) - Real-world determinism challenges and solutions
+- [Pathfinding Architecture Optimizations | Game AI Pro](http://www.gameaipro.com/GameAIPro/GameAIPro_Chapter17_Pathfinding_Architecture_Optimizations.pdf) - Performance optimization patterns
 
 ### Secondary (MEDIUM confidence)
 
-**Behavior Trees & AI:**
-- [Gamedeveloper - Behavior Trees for AI](https://www.gamedeveloper.com/programming/behavior-trees-for-ai-how-they-work)
-- [gdx-ai Core Architecture](https://deepwiki.com/libgdx/gdx-ai/1.2-core-architecture)
+- [RTS Pathfinding: Flow Fields | jdxdev](https://www.jdxdev.com/blog/2020/05/03/flowfields/) - When to use flow fields (and when not to)
+- [A* Pathfinding Project: Optimization](https://arongranberg.com/astar/documentation/stable/optimization.html) - Commercial pathfinding library optimization techniques
+- [How to RTS: Avoidance Behaviours](https://howtorts.github.io/2014/01/14/avoidance-behaviours.html) - Local avoidance patterns
+- [Analyzing Tie-Breaking Strategies for A* | IJCAI](https://www.ijcai.org/Proceedings/2018/0655.pdf) - Academic analysis of tie-breaking impact
 
-**Design Patterns:**
-- [Software Patterns Lexicon: Sealed Classes](https://softwarepatternslexicon.com/java/modern-java-features-and-their-impact-on-design/records-and-sealed-classes/understanding-sealed-classes/)
-- [Java Design Patterns - Component](https://java-design-patterns.com/patterns/component/)
-- [Entity Component System - Wikipedia](https://en.wikipedia.org/wiki/Entity_component_system)
-- [ECS FAQ - GitHub](https://github.com/SanderMertens/ecs-faq)
+### Tertiary (LOW confidence)
 
-**Legacy Code Refactoring:**
-- [How to Refactor Legacy Java Code Without Breaking Everything](https://medium.com/javarevisited/how-to-refactor-legacy-java-code-without-breaking-everything-f50004e706cf)
-- [Best Practices for Modernizing Legacy Java Code - Diffblue](https://www.diffblue.com/resources/best-practices-for-modernizing-legacy-java-code/)
-- [Modernizing Legacy Java: Practical Guide to Java 17/21+](https://medium.com/@alxkm/modernizing-legacy-java-a-practical-guide-to-migrating-to-java-17-21-b3ab6a215f1f)
-- [From Java 8 to Java 21: Step-by-Step Migration Guide](https://medium.com/@Games24x7Tech/from-java-8-to-java-21-a-step-by-step-migration-guide-24ec6b41f3ac)
-
-**Testing Legacy Code:**
-- [Refactoring Legacy Code: Part 1 - The Golden Master](https://code.tutsplus.com/refactoring-legacy-code-part-1-the-golden-master--cms-20331t)
-- [Characterization Testing - Refactoring with Confidence](https://cloudamite.com/characterization-testing/)
-- [Surviving Legacy Code with Golden Master and Sampling](https://blog.thecodewhisperer.com/permalink/surviving-legacy-code-with-golden-master-and-sampling)
-
-**Determinism & Game Development:**
-- [Unexpected Gotchas in Making a Game Deterministic](https://www.jfgeyelin.com/2025/05/unexpected-gotchas-in-making-game.html)
-- [Why Your Puzzle Game Should Be Deterministic](https://medium.com/@dev.ios.android/why-your-puzzle-game-should-be-deterministic-99a0ad4a5890)
-- [Taming Time in Game Engines - Fixed Timestep](https://andreleite.com/posts/2025/game-loop/fixed-timestep-game-loop/)
-
-### Tertiary (LOW confidence - webdev sources)
-
-- [The God Class Intervention](https://www.wayline.io/blog/god-class-intervention-avoiding-anti-pattern)
-- [Event Handling Strategies in Game Development](https://www.numberanalytics.com/blog/event-handling-strategies-game-development)
-- [Beyond If-Else Hell - State Machines](https://dev.to/niraj_gaming/beyond-if-else-hell-elegant-state-machines-pattern-in-game-development-2i7g)
-- [Event-Driven Architecture in Monoliths](https://www.javacodegeeks.com/2025/10/event-driven-architecture-in-monoliths-incremental-refactoring-for-java-apps.html)
+- [Pathfinding with A Star Algorithm in Java | Medium](https://medium.com/@AlexanderObregon/pathfinding-with-the-a-star-algorithm-in-java-3a66446a2352) - Basic implementation tutorial
+- [Dynamic Pathfinding Algorithms in Game Development | peerdh](https://peerdh.com/blogs/programming-insights/dynamic-pathfinding-algorithms-in-game-development) - High-level overview
 
 ---
 **Research completed:** 2026-02-05
 **Ready for roadmap:** Yes
-**Recommended starting phase:** Phase 1 (Foundation & Quick Wins) — establish golden master testing before ANY refactoring
+
+The research provides strong foundation for roadmap creation. Phase structure is clear with explicit dependencies, deliverables, and pitfall mitigation strategies. Determinism requirements and integration points are well-understood. Recommended approach (custom A* implementation with phased integration) is validated against authoritative sources and existing codebase architecture.

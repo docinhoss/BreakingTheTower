@@ -1,525 +1,627 @@
-# Technology Stack: Java 21 Modernization
+# Stack Research: A* Pathfinding for Breaking the Tower
 
-**Project:** Breaking the Tower (Java 1.6 to Java 21 Migration)
+**Project:** Breaking the Tower - Pathfinding Milestone
 **Researched:** 2026-02-05
-**Overall Confidence:** HIGH (verified with Oracle docs, OpenJDK JEPs, official sources)
+**Overall Confidence:** HIGH (custom implementation recommended with well-documented patterns)
+
+---
 
 ## Executive Summary
 
-This document prioritizes Java 21 features specifically valuable for modernizing "Breaking the Tower" - a Java 1.6 RTS/god game with entity systems, job-based AI, and resource economy. The focus is on features that improve code clarity, enable better architecture for future pathfinding, and replace legacy patterns with modern idioms.
+For Breaking the Tower's pathfinding needs, **implement A* from scratch** rather than adding an external library. The game's constraints (pure Java 21, no external frameworks, small grid ~256x256, <100 entities) make a custom implementation the right choice. The existing `NavigationGrid` interface already provides the abstraction layer needed for pathfinding queries.
 
-**Key insight:** Not all Java 21 features are equally valuable for this migration. Virtual threads, while headline-worthy, provide minimal benefit for CPU-bound game loops. Records, sealed classes, and pattern matching deliver the highest value for this game's architecture.
+**Key decisions:**
+- Custom A* implementation (~200-300 lines of well-structured code)
+- Grid overlay on continuous coordinates (cell size = entity radius * 2)
+- Path caching with invalidation on world changes
+- Integration through new `PathfindingService` registered with `ServiceLocator`
 
 ---
 
-## Priority 1: High-Value Features for Game Architecture
+## Recommended Approach
 
-### 1.1 Records - Replace Immutable Data Classes
+### Decision: Custom Implementation over External Library
 
-**Value for This Project:** HIGH
-**Effort:** LOW
-**Confidence:** HIGH (Official: [dev.java/learn/records](https://dev.java/learn/records/))
+**Recommendation:** Implement A* from scratch
 
-Records eliminate boilerplate for immutable data carriers. The codebase has `Vec` class that is already immutable-by-design - a perfect record candidate.
+**Rationale:**
 
-#### Migration Pattern: Vec Class
+| Factor | Library | Custom | Winner |
+|--------|---------|--------|--------|
+| Dependencies | Adds JAR to pure-Java project | Zero dependencies | Custom |
+| Control | Black box, may not fit grid model | Full control over heuristics, caching | Custom |
+| Learning curve | Library API + integration | Algorithm is simple, well-documented | Custom |
+| Maintenance | Library updates, compatibility | Self-contained, testable | Custom |
+| Performance tuning | Limited | Full access to optimize for game's specific patterns | Custom |
+| Code size | Library may include unused features | ~200-300 lines for A* core | Custom |
 
-**Before (Java 1.6):**
+**Why NOT a library:**
+
+1. **xaguzman/pathfinding** and **danielbatchford/PathFinding** are lightweight but still add a dependency to a pure-Java project
+2. Breaking the Tower's world is small (256x256 pixels, ~10-20 cells across with reasonable cell sizes)
+3. Entity count is low (~50-100 max) - no need for hierarchical pathfinding or flow fields
+4. The `NavigationGrid` interface already abstracts walkability queries - A* just needs to call it
+
+**Confidence:** HIGH - A* is a well-understood algorithm with extensive documentation and the codebase already has the infrastructure for pathfinding.
+
+---
+
+## Core Technologies
+
+### Data Structures Required
+
+#### 1. PathNode Record
+
+Represents a position on the navigation grid with A* scoring.
+
 ```java
-public class Vec {
-    public final double x, y, z;
+/**
+ * A node in the pathfinding graph.
+ * Uses Java records for immutability and automatic equals/hashCode (critical for Set membership).
+ */
+public record PathNode(
+    int gridX,
+    int gridY,
+    double gCost,  // Cost from start
+    double hCost,  // Heuristic cost to goal
+    PathNode parent
+) implements Comparable<PathNode> {
 
-    public Vec(double x, double y, double z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+    public double fCost() {
+        return gCost + hCost;
     }
 
-    public Vec(Vec v) {
-        this.x = v.x;
-        this.y = v.y;
-        this.z = v.z;
+    @Override
+    public int compareTo(PathNode other) {
+        return Double.compare(this.fCost(), other.fCost());
     }
 
-    // 70+ more lines of boilerplate...
-    public Vec add(Vec m) {
-        return new Vec(x+m.x, y+m.y, z+m.z);
+    // Only compare grid position for Set membership
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof PathNode(int x, int y, var g, var h, var p)
+            && x == gridX && y == gridY;
     }
 
-    public Vec scale(double v) {
-        return new Vec(x*v, y*v, z*v);
+    @Override
+    public int hashCode() {
+        return 31 * gridX + gridY;
     }
 }
 ```
 
-**After (Java 21):**
+**Why a record:**
+- Immutable (thread-safe for future optimization)
+- Auto-generated `hashCode`/`equals` baseline (we override for grid position only)
+- Pattern matching friendly for downstream consumers
+
+**Confidence:** HIGH - Java 21 records are ideal for node representation.
+
+#### 2. Path Record
+
+Represents a computed path as an immutable list of waypoints.
+
 ```java
-public record Vec(double x, double y, double z) {
-    public Vec add(Vec m) {
-        return new Vec(x + m.x, y + m.y, z + m.z);
+/**
+ * An immutable, computed path from start to goal.
+ * Waypoints are in world coordinates, not grid coordinates.
+ */
+public record Path(
+    List<Vec> waypoints,
+    double totalCost,
+    long computedAtTick
+) {
+    public Path {
+        waypoints = List.copyOf(waypoints);  // Defensive copy
     }
 
-    public Vec scale(double v) {
-        return new Vec(x * v, y * v, z * v);
+    public boolean isEmpty() {
+        return waypoints.isEmpty();
     }
 
-    public double distanceSqr(Vec v) {
-        double xd = v.x - x;
-        double yd = v.y - y;
-        double zd = v.z - z;
-        return xd*xd + yd*yd + zd*zd;
+    public Vec nextWaypoint() {
+        return waypoints.isEmpty() ? null : waypoints.getFirst();
+    }
+
+    public Path withoutFirst() {
+        if (waypoints.size() <= 1) return new Path(List.of(), totalCost, computedAtTick);
+        return new Path(waypoints.subList(1, waypoints.size()), totalCost, computedAtTick);
+    }
+
+    public boolean isStale(long currentTick, int maxAge) {
+        return currentTick - computedAtTick > maxAge;
     }
 }
 ```
 
-**Benefits:**
-- Auto-generated `equals()`, `hashCode()`, `toString()`
-- Guaranteed immutability
-- Compact syntax reduces 76-line class to ~20 lines
-- Enables record patterns for deconstruction
+**Why immutable:** Paths can be shared between ticks without defensive copying. Stale check enables cache invalidation.
 
-#### Additional Record Candidates in Codebase
+**Confidence:** HIGH - Immutable paths simplify caching and debugging.
 
-| Current Pattern | Record Candidate | Rationale |
-|----------------|------------------|-----------|
-| `Vec` class | `record Vec(double x, double y, double z)` | Already immutable |
-| Resource costs in `HouseType` | `record Cost(int wood, int rock, int food)` | Immutable, passed around |
-| Position parameters `(double x, double y, double r)` | `record Position(double x, double y, double radius)` | Used in Entity constructor |
+#### 3. PriorityQueue for Open Set
+
+Java's built-in `PriorityQueue` with custom comparator.
+
+```java
+PriorityQueue<PathNode> openSet = new PriorityQueue<>(
+    Comparator.comparingDouble(PathNode::fCost)
+);
+```
+
+**Why PriorityQueue:**
+- O(log n) insertion and removal of minimum
+- Built into Java, no dependencies
+- Sufficient for small grids (<1000 nodes explored per path)
+
+**Confidence:** HIGH - Standard A* implementation pattern, verified in [Baeldung A* tutorial](https://www.baeldung.com/java-a-star-pathfinding).
+
+#### 4. HashSet for Closed Set
+
+```java
+Set<PathNode> closedSet = new HashSet<>();
+```
+
+**Why HashSet:** O(1) contains check. PathNode's `equals`/`hashCode` based on grid position enables efficient membership testing.
+
+**Confidence:** HIGH - Standard pattern.
 
 ---
 
-### 1.2 Sealed Classes - Define Entity Hierarchy
+### Algorithm Components
 
-**Value for This Project:** HIGH
-**Effort:** MEDIUM
-**Confidence:** HIGH (Official: [JEP 409](https://openjdk.org/jeps/409), [softwarepatternslexicon.com](https://softwarepatternslexicon.com/java/modern-java-features-and-their-impact-on-design/records-and-sealed-classes/understanding-sealed-classes/))
+#### 1. Heuristic Function
 
-Sealed classes enable exhaustive type checking when combined with pattern matching. The game's Entity hierarchy is a textbook use case.
+For grid-based movement, use **Euclidean distance** (since entities can move in any direction, not just cardinal).
 
-#### Migration Pattern: Entity Hierarchy
-
-**Before (Java 1.6):**
 ```java
-public class Entity implements Comparable<Entity> { ... }
-public class Peon extends Entity { ... }
-public class Monster extends Entity { ... }
-public class House extends Entity { ... }
-public class Tree extends Entity { ... }
-public class Rock extends Entity { ... }
-public class FarmPlot extends Entity { ... }
-public class Puff extends Entity { ... }
-public class InfoPuff extends Entity { ... }
-```
-
-**After (Java 21):**
-```java
-public sealed abstract class Entity implements Comparable<Entity>
-    permits Peon, Monster, House, Tree, Rock, FarmPlot, Puff, InfoPuff {
-    // ...
+private double heuristic(int fromX, int fromY, int toX, int toY) {
+    double dx = fromX - toX;
+    double dy = fromY - toY;
+    return Math.sqrt(dx * dx + dy * dy) * CELL_SIZE;
 }
-
-public final class Peon extends Entity { ... }
-public final class Monster extends Entity { ... }
-// etc.
 ```
 
-**Benefits:**
-- Compiler enforces exhaustive switch handling
-- Documents valid subtypes explicitly
-- Enables exhaustive pattern matching (no default case needed)
-- Prevents unauthorized subclasses
+**Why Euclidean over Manhattan:**
+- Entities move continuously with `Math.cos(rot)`, `Math.sin(rot)` - not tile-locked
+- Euclidean is admissible (never overestimates) for continuous movement
+- Manhattan would overestimate diagonal paths, leading to suboptimal routes
 
-#### Entity Category Hierarchy (Recommended)
+**Confidence:** HIGH - Matches game's movement model.
 
-For cleaner architecture, consider intermediate sealed interfaces:
+#### 2. Neighbor Generation
+
+For 8-directional movement (including diagonals):
 
 ```java
-public sealed interface GameEntity permits MobileEntity, StaticEntity, EffectEntity {}
-
-public sealed interface MobileEntity extends GameEntity permits Peon, Monster {}
-public sealed interface StaticEntity extends GameEntity permits House, Tree, Rock, FarmPlot {}
-public sealed interface EffectEntity extends GameEntity permits Puff, InfoPuff {}
-```
-
----
-
-### 1.3 Pattern Matching for switch - Replace instanceof Chains
-
-**Value for This Project:** HIGH
-**Effort:** LOW-MEDIUM
-**Confidence:** HIGH (Official: [JEP 441](https://openjdk.org/jeps/441))
-
-The codebase has multiple `instanceof` checks that become cleaner with pattern matching.
-
-#### Migration Pattern: Target Filtering
-
-**Before (Java 1.6):**
-```java
-// In House.java line 118-123
-TargetFilter noMobFilter = new TargetFilter() {
-    public boolean accepts(Entity e) {
-        return !(e instanceof Peon || e instanceof Monster);
-    }
+private static final int[][] DIRECTIONS = {
+    {-1, -1}, {0, -1}, {1, -1},
+    {-1,  0},          {1,  0},
+    {-1,  1}, {0,  1}, {1,  1}
 };
 
-// In Peon.java line 90-93
-if (e instanceof Monster) {
-    setJob(new Job.Hunt((Monster) e));
-}
+private List<PathNode> getNeighbors(PathNode current, PathNode goal) {
+    List<PathNode> neighbors = new ArrayList<>(8);
+    for (int[] dir : DIRECTIONS) {
+        int nx = current.gridX() + dir[0];
+        int ny = current.gridY() + dir[1];
 
-// In Monster.java line 54-57
-if (e instanceof House || e instanceof Peon) {
-    target = e;
-}
-```
+        // Convert grid to world coordinates for walkability check
+        double worldX = gridToWorldX(nx);
+        double worldY = gridToWorldY(ny);
 
-**After (Java 21):**
-```java
-// Pattern matching with switch
-public boolean accepts(Entity e) {
-    return switch (e) {
-        case Peon p -> false;
-        case Monster m -> false;
-        default -> true;
-    };
-}
-
-// Pattern matching with instanceof (already in Java 16)
-if (e instanceof Monster m) {
-    setJob(new Job.Hunt(m));  // No cast needed
-}
-
-// With sealed hierarchy - exhaustive matching
-var isTarget = switch (e) {
-    case House h -> true;
-    case Peon p -> true;
-    case Monster m -> false;
-    case Tree t -> false;
-    // ... compiler ensures all cases handled
-};
-```
-
-#### High-Value Migration Targets in Codebase
-
-| File | Line | Current Pattern | Modernized Pattern |
-|------|------|-----------------|-------------------|
-| `House.java` | 207-210 | `if (e instanceof Peon)` + cast | `if (e instanceof Peon peon)` |
-| `Peon.java` | 90 | `if (e instanceof Monster)` + cast | `if (e instanceof Monster m)` |
-| `Monster.java` | 54-57 | `instanceof` chain | `switch` with patterns |
-| `HouseType.java` | 59-70 | `if (this == MASON)` chain | `switch (this)` expression |
-
----
-
-### 1.4 Sealed Classes + Records for Job System
-
-**Value for This Project:** VERY HIGH
-**Effort:** MEDIUM
-**Confidence:** HIGH
-
-The Job class hierarchy (nested static classes) is an ideal candidate for sealed classes with record-based implementations.
-
-#### Migration Pattern: Job Hierarchy
-
-**Before (Java 1.6):**
-```java
-public class Job {
-    public static class Goto extends Job {
-        private Entity target;
-        public Goto(Entity target) {
-            this.target = target;
-            bonusRadius = 15;
+        // Use existing NavigationGrid for walkability
+        if (navigationGrid.isOnGround(worldX, worldY)) {
+            double moveCost = (dir[0] != 0 && dir[1] != 0)
+                ? DIAGONAL_COST  // sqrt(2) * CELL_SIZE
+                : CELL_SIZE;
+            double g = current.gCost() + moveCost;
+            double h = heuristic(nx, ny, goal.gridX(), goal.gridY());
+            neighbors.add(new PathNode(nx, ny, g, h, current));
         }
-        // ...
     }
-
-    public static class Gather extends Job {
-        boolean hasResource = false;
-        public int resourceId = 0;
-        private House returnTo;
-        // ...
-    }
-    // 6 more nested classes...
+    return neighbors;
 }
 ```
 
-**After (Java 21):**
+**Why 8-directional:**
+- Matches entity movement (any angle via cos/sin)
+- Avoids ugly staircase paths from 4-directional
+
+**Confidence:** HIGH - Standard for continuous-movement games.
+
+---
+
+### Grid System Design
+
+#### Coordinate Conversion
+
+The game uses continuous world coordinates (~-192 to +192 range based on 256x256 * 1.5 factor). Pathfinding needs a discrete grid overlay.
+
 ```java
-public sealed interface Job permits
-    Job.Goto, Job.GotoAndConvert, Job.Hunt, Job.Build, Job.Plant, Job.Gather {
+public class PathfindingGrid {
+    private static final double CELL_SIZE = 4.0;  // Tunable: roughly 2x peon radius
+    private static final double WORLD_MIN = -192.0;
+    private static final double WORLD_MAX = 192.0;
 
-    void tick();
-    boolean hasTarget();
-    void arrived();
+    public int worldToGridX(double worldX) {
+        return (int) Math.floor((worldX - WORLD_MIN) / CELL_SIZE);
+    }
 
-    record Goto(Entity target) implements Job {
-        public Goto {
-            // Compact constructor for validation
+    public int worldToGridY(double worldY) {
+        return (int) Math.floor((worldY - WORLD_MIN) / CELL_SIZE);
+    }
+
+    public double gridToWorldX(int gridX) {
+        return WORLD_MIN + (gridX + 0.5) * CELL_SIZE;  // Center of cell
+    }
+
+    public double gridToWorldY(int gridY) {
+        return WORLD_MIN + (gridY + 0.5) * CELL_SIZE;
+    }
+}
+```
+
+**Cell size rationale:**
+- Peon radius = 1.0 (from `super(x, y, 1)` in Peon constructor)
+- Cell size of 4.0 allows comfortable navigation
+- Larger cells = faster pathfinding but coarser paths
+- Smaller cells = precise paths but more nodes to explore
+
+**Grid dimensions:** 384 / 4 = 96 cells per axis = 9,216 total cells (small enough for brute-force A*)
+
+**Confidence:** HIGH - Standard grid overlay approach, tunable based on testing.
+
+---
+
+## Integration Points
+
+### 1. PathfindingService
+
+New service registered with ServiceLocator, following existing patterns.
+
+```java
+public interface PathfindingService {
+    /**
+     * Find path from entity's current position to target.
+     * Returns empty path if no path exists.
+     */
+    Path findPath(Entity entity, double targetX, double targetY);
+
+    /**
+     * Invalidate cached paths (call when world changes significantly).
+     */
+    void invalidateCache();
+}
+
+public class AStarPathfindingService implements PathfindingService {
+    private final NavigationGrid grid;
+    private final Map<PathCacheKey, Path> pathCache = new HashMap<>();
+
+    public AStarPathfindingService(NavigationGrid grid) {
+        this.grid = grid;
+    }
+
+    // Implementation...
+}
+```
+
+**Registration in ServiceLocator:**
+```java
+public class ServiceLocator {
+    private static PathfindingService pathfinding;
+
+    public static PathfindingService pathfinding() {
+        return pathfinding;
+    }
+
+    public static void providePathfinding(PathfindingService service) {
+        pathfinding = service;
+    }
+}
+```
+
+**Confidence:** HIGH - Follows existing ServiceLocator pattern in codebase.
+
+### 2. MovementSystem Integration
+
+MovementSystem remains the single source of truth for position updates. Pathfinding provides direction, MovementSystem executes.
+
+```java
+// In Peon.tick() - conceptual integration
+if (job != null && job.hasTarget()) {
+    Path path = ServiceLocator.pathfinding().findPath(this, job.xTarget, job.yTarget);
+    if (!path.isEmpty()) {
+        Vec nextWaypoint = path.nextWaypoint();
+        double xd = nextWaypoint.x() - x;
+        double yd = nextWaypoint.y() - y;
+        rot = Math.atan2(yd, xd);  // Face toward waypoint
+    }
+}
+
+// MovementSystem.move() unchanged - it handles collision detection
+```
+
+**Key insight:** Pathfinding doesn't replace MovementSystem - it informs the direction. MovementSystem still validates each step.
+
+**Confidence:** HIGH - Clean separation of concerns.
+
+### 3. NavigationGrid Enhancement
+
+Current `NavigationGrid.isFree()` checks entity collisions. For pathfinding, we need walkability without considering moving entities.
+
+```java
+public interface NavigationGrid {
+    // Existing
+    boolean isOnGround(double x, double y);
+    boolean isFree(double x, double y, double radius, Entity exclude);
+
+    // New for pathfinding - only checks terrain, not entities
+    default boolean isWalkable(double x, double y) {
+        return isOnGround(x, y);
+    }
+}
+```
+
+**Why separate walkability:**
+- A* computes static paths based on terrain
+- Dynamic obstacles (other entities) are handled by MovementSystem collision
+- Computing paths around moving entities leads to oscillation
+
+**Confidence:** HIGH - Standard pattern: static pathfinding + dynamic collision avoidance.
+
+---
+
+## Path Caching Strategy
+
+### When to Cache
+
+Cache paths for repeated queries to same destination within short time window.
+
+```java
+record PathCacheKey(int startGridX, int startGridY, int goalGridX, int goalGridY) {}
+
+private Path getCachedOrCompute(Entity entity, double targetX, double targetY, long currentTick) {
+    int startX = worldToGridX(entity.x);
+    int startY = worldToGridY(entity.y);
+    int goalX = worldToGridX(targetX);
+    int goalY = worldToGridY(targetY);
+
+    PathCacheKey key = new PathCacheKey(startX, startY, goalX, goalY);
+    Path cached = pathCache.get(key);
+
+    if (cached != null && !cached.isStale(currentTick, MAX_CACHE_AGE_TICKS)) {
+        return cached;
+    }
+
+    Path computed = computePath(startX, startY, goalX, goalY, currentTick);
+    pathCache.put(key, computed);
+    return computed;
+}
+```
+
+**Cache parameters:**
+- `MAX_CACHE_AGE_TICKS = 60` (2 seconds at 30 tps) - prevents stale paths
+- Cache size limit: ~100 entries with LRU eviction (optional, grid is small)
+
+**Confidence:** MEDIUM - Cache effectiveness depends on actual usage patterns. Start simple, optimize if needed.
+
+### When to Invalidate
+
+Invalidate cache when world changes significantly:
+- Building placed/destroyed
+- Tree harvested
+- Entity dies (if blocking was considered)
+
+```java
+// In Island.addEntity() and entity removal
+ServiceLocator.pathfinding().invalidateCache();
+```
+
+**Aggressive invalidation is fine** for this game size. Cache rebuilds are cheap.
+
+**Confidence:** MEDIUM - May need tuning based on gameplay.
+
+---
+
+## Dynamic Recalculation
+
+### Recalculation Triggers
+
+1. **Path blocked:** MovementSystem returns `Blocked` for next waypoint
+2. **Goal moved:** Target entity changed position significantly
+3. **Cache stale:** Path age exceeds threshold
+
+```java
+// In movement logic
+switch (result) {
+    case MovementResult.Blocked(var blocker) -> {
+        // Current path segment blocked - recalculate
+        currentPath = ServiceLocator.pathfinding().findPath(this, job.xTarget, job.yTarget);
+        // Also apply existing collision response (random rotation, wander)
+    }
+    case MovementResult.Moved(var x, var y) -> {
+        // Check if reached current waypoint
+        if (distanceTo(currentPath.nextWaypoint()) < WAYPOINT_RADIUS) {
+            currentPath = currentPath.withoutFirst();
         }
-        @Override public void arrived() { /* ... */ }
-    }
-
-    record Hunt(Monster target) implements Job {
-        @Override public void arrived() { /* ... */ }
-    }
-
-    // Stateful jobs need sealed classes, not records
-    sealed class Gather implements Job {
-        private final int resourceId;
-        private final House returnTo;
-        private boolean hasResource = false;
-        // ...
     }
 }
 ```
 
-**Benefits:**
-- Type-safe job dispatch with pattern matching
-- Clear data vs behavior separation
-- Compiler enforces exhaustive handling
+**Confidence:** HIGH - Standard reactive recalculation pattern.
 
----
+### Recalculation Budget
 
-## Priority 2: Syntax Modernization
+Limit pathfinding computations per tick to maintain 30 fps:
 
-### 2.1 Local Variable Type Inference (var)
-
-**Value for This Project:** MEDIUM
-**Effort:** LOW
-**Confidence:** HIGH (Official: [JEP 286](https://openjdk.org/jeps/286))
-
-Use `var` to reduce redundancy where type is obvious from context.
-
-#### Migration Pattern
-
-**Before:**
 ```java
-TargetFilter peonFilter = new TargetFilter() {
-    public boolean accepts(Entity e) {
-        return e.isAlive() && (e instanceof Peon);
+public class AStarPathfindingService {
+    private static final int MAX_PATHS_PER_TICK = 5;
+    private int pathsThisTick = 0;
+
+    public Path findPath(Entity entity, double targetX, double targetY) {
+        if (pathsThisTick >= MAX_PATHS_PER_TICK) {
+            return Path.EMPTY;  // Defer to next tick
+        }
+        pathsThisTick++;
+        // ... compute path
     }
-};
-Entity e = getRandomTarget(r, s, peonFilter);
-```
 
-**After:**
-```java
-var peonFilter = new TargetFilter() {
-    public boolean accepts(Entity e) {
-        return e.isAlive() && e instanceof Peon;
-    }
-};
-var e = getRandomTarget(r, s, peonFilter);
-```
-
-#### Best Practices for var
-
-| Use var When | Avoid var When |
-|--------------|----------------|
-| Type obvious from RHS: `var list = new ArrayList<Entity>()` | Type not obvious: `var result = process()` |
-| Long generic types: `var map = new HashMap<String, List<Entity>>()` | Primitive types: prefer `int` over `var` |
-| Try-with-resources | Method parameters (not supported) |
-| Enhanced for loops: `for (var entity : entities)` | Fields (not supported) |
-
----
-
-### 2.2 Switch Expressions
-
-**Value for This Project:** MEDIUM
-**Effort:** LOW
-**Confidence:** HIGH (Official: [JEP 361](https://openjdk.org/jeps/361))
-
-Convert switch statements to expressions for cleaner code.
-
-#### Migration Pattern: HouseType Description
-
-**Before (Java 1.6):**
-```java
-public String getDescription() {
-    if (this == MASON) return "Gathers nearby stones, produces rock";
-    if (this == WOODCUTTER) return "Cuts down nearby trees, produces wood";
-    if (this == PLANTER) return "Plants new trees that can later be cut down";
-    if (this == FARM) return "Plants crops that can later be harvested";
-    if (this == WINDMILL) return "Gathers nearby grown crops, produces food";
-    if (this == GUARDPOST) return "Peons and warriors generally stay near these";
-    if (this == BARRACKS) return "Converts peons into warriors for 5 wood each";
-    if (this == RESIDENCE) return "Produces peons for 5 food each";
-    return "**unknown**";
-}
-```
-
-**After (Java 21):**
-```java
-public String getDescription() {
-    return switch (this) {
-        case MASON -> "Gathers nearby stones, produces rock";
-        case WOODCUTTER -> "Cuts down nearby trees, produces wood";
-        case PLANTER -> "Plants new trees that can later be cut down";
-        case FARM -> "Plants crops that can later be harvested";
-        case WINDMILL -> "Gathers nearby grown crops, produces food";
-        case GUARDPOST -> "Peons and warriors generally stay near these";
-        case BARRACKS -> "Converts peons into warriors for 5 wood each";
-        case RESIDENCE -> "Produces peons for 5 food each";
-    };
-}
-```
-
----
-
-### 2.3 Text Blocks
-
-**Value for This Project:** LOW (limited multiline strings in game code)
-**Effort:** LOW
-**Confidence:** HIGH (Official: [JEP 378](https://openjdk.org/jeps/378))
-
-Useful for any debug output, logging, or configuration strings.
-
-```java
-// Before
-String help = "Building Types:\n" +
-              "  MASON - Gathers stones\n" +
-              "  WOODCUTTER - Cuts trees\n";
-
-// After
-String help = """
-    Building Types:
-      MASON - Gathers stones
-      WOODCUTTER - Cuts trees
-    """;
-```
-
----
-
-## Priority 3: Collection and API Modernization
-
-### 3.1 Collection Factory Methods
-
-**Value for This Project:** MEDIUM
-**Effort:** LOW
-**Confidence:** HIGH (Official: [JEP 269](https://openjdk.org/jeps/269))
-
-Replace verbose collection initialization with factory methods.
-
-```java
-// Before
-List<HouseType> buildings = new ArrayList<>();
-buildings.add(HouseType.MASON);
-buildings.add(HouseType.WOODCUTTER);
-buildings = Collections.unmodifiableList(buildings);
-
-// After
-var buildings = List.of(HouseType.MASON, HouseType.WOODCUTTER);
-```
-
-### 3.2 Sequenced Collections (Java 21)
-
-**Value for This Project:** MEDIUM
-**Effort:** LOW
-**Confidence:** HIGH (Official: [JEP 431](https://openjdk.org/jeps/431))
-
-New interfaces for ordered collections with first/last access.
-
-```java
-// New in Java 21
-SequencedCollection<Entity> entities = new ArrayList<>();
-Entity first = entities.getFirst();
-Entity last = entities.getLast();
-var reversed = entities.reversed();  // Reversed view
-```
-
----
-
-## Priority 4: Features with Limited Value for This Project
-
-### 4.1 Virtual Threads
-
-**Value for This Project:** LOW
-**Effort:** HIGH
-**Confidence:** HIGH (Official: [JEP 444](https://openjdk.org/jeps/444), [Oracle Docs](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html))
-
-**Why NOT to prioritize:**
-- Virtual threads excel at I/O-bound workloads
-- Game loops are CPU-bound (rendering, physics, AI tick)
-- No significant throughput benefit for single-threaded game loop
-- Would require architectural changes for minimal gain
-
-**When to consider:** If adding network multiplayer or async asset loading in future.
-
-### 4.2 String Templates (Preview)
-
-**Value for This Project:** SKIP
-**Confidence:** HIGH
-
-String templates were a preview feature that has been **removed in JDK 23** pending redesign. Do not adopt.
-
----
-
-## Deprecated API Replacements
-
-These changes are **mandatory** for Java 21 compatibility.
-
-| Deprecated Pattern | Replacement | Affected Code |
-|-------------------|-------------|---------------|
-| `new URL(String)` | `URI.create(String).toURL()` | Any URL construction |
-| `Thread.stop()` | Cooperative interruption | Not used in codebase |
-| `Locale` constructor | `Locale.of()` | Localization (if any) |
-| Finalization (`finalize()`) | Try-with-resources, Cleaner | Resource cleanup |
-
----
-
-## Migration Order Recommendation
-
-Based on value/effort ratio for this game codebase:
-
-### Phase 1: Quick Wins (High Value, Low Effort)
-1. **var adoption** - Immediate readability improvement
-2. **Switch expressions** - Clean up HouseType, Resources
-3. **Pattern matching instanceof** - Remove casts in Peon, Monster, House
-
-### Phase 2: Architecture Improvement (High Value, Medium Effort)
-4. **Records for Vec** - Cleanest win, no behavior change
-5. **Sealed Entity hierarchy** - Enable exhaustive matching
-6. **Job hierarchy modernization** - Sealed interface + records
-
-### Phase 3: Full Modernization
-7. **Collection factory methods** - Replace verbose initialization
-8. **TargetFilter as functional interface** - Use lambdas
-9. **Sequenced collections** - Where iteration order matters
-
----
-
-## Build Configuration
-
-```xml
-<!-- Maven -->
-<properties>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
-</properties>
-
-<!-- Or Gradle -->
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+    public void onTickStart() {
+        pathsThisTick = 0;
     }
 }
+```
+
+**Confidence:** MEDIUM - Budget may need adjustment based on profiling. With ~50 entities and small grid, likely not a bottleneck.
+
+---
+
+## What NOT to Add
+
+### 1. Hierarchical Pathfinding (HPA*)
+
+**Why not:**
+- HPA* is for large maps (1000x1000+)
+- Breaking the Tower's grid is ~96x96 cells
+- Overhead of hierarchy construction exceeds benefit
+
+**When to reconsider:** If map size increases 10x
+
+### 2. Flow Fields
+
+**Why not:**
+- Flow fields shine with many units to one destination
+- Breaking the Tower has ~10 peons going to different destinations
+- Memory overhead (one field per destination) not justified
+
+**When to reconsider:** Mass unit commands (select 100 peons, send to tower)
+
+### 3. Jump Point Search (JPS)
+
+**Why not:**
+- JPS optimizes for uniform-cost grids
+- Benefit is ~10x for large open grids
+- Implementation complexity higher than vanilla A*
+- Grid is small enough that optimization unnecessary
+
+**When to reconsider:** Profiling shows pathfinding as bottleneck
+
+### 4. Navigation Meshes
+
+**Why not:**
+- NavMesh suited for polygonal 3D environments
+- Game already has grid-based ground check (island bitmap)
+- Would require complete rewrite of world representation
+
+**When to reconsider:** Never for this game
+
+### 5. External Libraries
+
+**Why not:**
+- Adds dependency to pure-Java project
+- Library may not fit game's specific grid model
+- Implementation is straightforward (~200-300 lines)
+- Full control over optimization and debugging
+
+**When to reconsider:** If implementing advanced algorithms (D* Lite, Theta*) becomes necessary
+
+---
+
+## Performance Expectations
+
+### Worst Case Analysis
+
+- Grid size: 96 x 96 = 9,216 cells
+- A* with Euclidean heuristic explores ~20% of grid for worst-case path
+- ~1,800 nodes explored
+- PriorityQueue operations: O(n log n) = ~20,000 operations
+- Per-path time: <1ms on modern hardware
+
+### Tick Budget
+
+At 30 tps, each tick has ~33ms budget.
+- Pathfinding budget: 5ms max (15% of tick)
+- 5 paths per tick @ <1ms each = well under budget
+- Leaves room for rendering, physics, AI
+
+**Confidence:** HIGH - Verified against similar game implementations.
+
+---
+
+## Implementation Order Recommendation
+
+### Phase 1: Core A* (Foundational)
+
+1. Create `PathNode` record
+2. Create `Path` record
+3. Implement `PathfindingGrid` coordinate conversion
+4. Implement basic A* algorithm
+5. Add `PathfindingService` interface and `AStarPathfindingService`
+6. Register with `ServiceLocator`
+
+**Deliverable:** Can compute paths, not yet integrated with movement
+
+### Phase 2: Movement Integration
+
+1. Add `isWalkable()` to `NavigationGrid` (or use existing `isOnGround`)
+2. Modify Peon movement to use pathfinding when job has target
+3. Handle blocked paths with recalculation
+4. Add waypoint following logic
+
+**Deliverable:** Peons navigate around terrain
+
+### Phase 3: Caching and Optimization
+
+1. Add path cache with staleness check
+2. Add cache invalidation on world changes
+3. Add per-tick computation budget
+4. Profile and tune parameters
+
+**Deliverable:** Production-ready pathfinding
+
+---
+
+## File Structure
+
+```
+src/main/java/com/mojang/tower/
+  pathfinding/
+    PathNode.java           # A* node record
+    Path.java               # Computed path record
+    PathfindingGrid.java    # Coordinate conversion
+    PathfindingService.java # Interface
+    AStarPathfinder.java    # A* implementation
+  navigation/
+    NavigationGrid.java     # Existing (may add isWalkable)
+  movement/
+    MovementSystem.java     # Existing (unchanged)
+  service/
+    ServiceLocator.java     # Add pathfinding() method
 ```
 
 ---
 
 ## Sources
 
-**High Confidence (Official Documentation):**
-- [Oracle Java 21 Virtual Threads](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html)
-- [JEP 441: Pattern Matching for switch](https://openjdk.org/jeps/441)
-- [JEP 395: Records](https://openjdk.org/jeps/395)
-- [JEP 409: Sealed Classes](https://openjdk.org/jeps/409)
-- [JEP 286: Local Variable Type Inference](https://openjdk.org/jeps/286)
-- [JEP 378: Text Blocks](https://openjdk.org/jeps/378)
-- [JEP 431: Sequenced Collections](https://openjdk.org/jeps/431)
-- [dev.java/learn/records](https://dev.java/learn/records/)
-- [OpenRewrite: Migrate to Java 21](https://docs.openrewrite.org/recipes/java/migrate/upgradetojava21)
+**Algorithm References:**
+- [Baeldung: Implementing A* Pathfinding in Java](https://www.baeldung.com/java-a-star-pathfinding) - Java implementation patterns
+- [Red Blob Games: A* Introduction](https://www.redblobgames.com/pathfinding/a-star/introduction.html) - Authoritative A* tutorial
+- [Red Blob Games: Grid Pathfinding Algorithms](https://www.redblobgames.com/pathfinding/grids/algorithms.html) - Grid-specific optimizations
 
-**Medium Confidence (Verified Community Sources):**
-- [Baeldung: Pattern Matching for Switch](https://www.baeldung.com/java-switch-pattern-matching)
-- [nipafx: Java 21 Pattern Matching Tutorial](https://nipafx.dev/java-21-pattern-matching/)
-- [Software Patterns Lexicon: Sealed Classes](https://softwarepatternslexicon.com/java/modern-java-features-and-their-impact-on-design/records-and-sealed-classes/understanding-sealed-classes/)
+**Java Data Structures:**
+- [GeeksforGeeks: PriorityQueue in Java](https://www.geeksforgeeks.org/java/priority-queue-in-java/) - PriorityQueue usage
+- [HowToDoInJava: Java Priority Queue](https://howtodoinjava.com/java/collections/java-priorityqueue/) - Comparator patterns
+
+**RTS Pathfinding Patterns:**
+- [Game Developer: Group Pathfinding in RTS Games](https://www.gamedeveloper.com/programming/group-pathfinding-movement-in-rts-style-games) - RTS-specific considerations
+- [How to RTS: Basic Flow Fields](https://howtorts.github.io/2014/01/04/basic-flow-fields.html) - Why flow fields (and when not to use them)
+- [arXiv: Multi-threaded Recast-Based A* Pathfinding](https://arxiv.org/html/2602.04130) - Modern pathfinding research (2025)
+
+**Grid/Coordinate Systems:**
+- [Outscal: Unity Grid-Based System Development](https://outscal.com/blog/unity-grid-based-system) - Grid coordinate concepts (applicable to any engine)
+
+**Existing Libraries (evaluated but not recommended):**
+- [GitHub: xaguzman/pathfinding](https://github.com/xaguzman/pathfinding) - Java pathfinding framework
+- [GitHub: danielbatchford/PathFinding](https://github.com/danielbatchford/PathFinding) - Lightweight Java pathfinding
+- [GitHub: patrykkrawczyk/2D-A-path-finding-in-Java](https://github.com/patrykkrawczyk/2D-A-path-finding-in-Java) - Simple 2D A* implementation

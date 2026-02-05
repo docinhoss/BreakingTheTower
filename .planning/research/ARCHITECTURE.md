@@ -1,394 +1,665 @@
-# Architecture Patterns
+# Architecture Research: Pathfinding Integration
 
-**Domain:** 2D RTS/god game modernization
+**Domain:** A* pathfinding for RTS/god game
 **Researched:** 2026-02-05
-**Overall Confidence:** HIGH (patterns well-established, codebase fully analyzed)
+**Context:** Subsequent milestone adding pathfinding to existing v1 architecture
+**Confidence:** HIGH (existing architecture analyzed, patterns well-established)
 
 ## Executive Summary
 
-Breaking the Tower has a working but monolithic architecture from the Java applet era. The current design tightly couples movement logic, behavior decisions, and rendering within individual entity classes. To support pathfinding and future extensibility, the architecture needs clean separation between these concerns without abandoning the working codebase.
+The v1 architecture was specifically designed for pathfinding integration. The existing `MovementSystem`, `NavigationGrid`, and `MovementRequest/MovementResult` types provide clean integration points. A* pathfinding can be added as a new `MovementStrategy` implementation that:
 
-The recommended approach is **incremental component extraction** rather than a full ECS migration. This preserves the existing entity hierarchy while introducing clean interfaces between movement, behavior, and rendering subsystems.
+1. Queries `NavigationGrid.isWalkable()` for walkability
+2. Returns the next step on the computed path
+3. Caches paths and invalidates on obstacle changes or arrival
 
-## Current Architecture Analysis
+The recommended approach is **strategy pattern with path caching** - where pathfinding becomes a pluggable movement strategy that can coexist with the existing direct movement behavior.
 
-### Component Map
+## Integration Points
 
-| Class | Responsibilities | Problems |
-|-------|------------------|----------|
-| `Entity` | Position, collision, rendering stub, world access | Good base, but subclasses override too much |
-| `Peon` | Movement execution, job delegation, combat, rendering, health, leveling | Too many concerns; movement intertwined with behavior |
-| `Monster` | Target finding, movement, combat, rendering, health | Same movement code duplicated from Peon |
-| `Job` | Target selection, movement steering, arrival behavior, resource tracking | Mixes "what to do" with "how to move" |
-| `Island` | Entity storage, collision queries, world state, coordinate transform | Good world container, but O(n) entity queries |
-| `TowerComponent` | Game loop, input, rendering orchestration, game state, UI | Classic "god class" for main loop |
-| `House` | Building behavior, job assignment, spawning, rendering | Behavior logic embedded in entity |
+### Existing Architecture Summary
 
-### Current Data Flow
+The v1 milestone established these components:
 
-```
-TowerComponent.tick()
-    |
-    v
-Island.tick() --> for each Entity: entity.tick()
-                        |
-                        v
-                  Peon.tick()
-                    - job.tick()          [behavior timing]
-                    - job.hasTarget()     [target selection]
-                    - calculate velocity  [movement MIXED with behavior]
-                    - island.isFree()     [collision check]
-                    - update position     [movement execution]
-```
-
-**Critical Issue:** Movement calculation happens inside `Peon.tick()` lines 109-156, where:
-- Line 110-121: Job provides target (behavior concern)
-- Line 125: Random wander rotation (movement concern)
-- Line 132-156: Velocity calculation and collision (movement concern)
-
-These are interleaved, making it impossible to swap in pathfinding without rewriting Peon.
-
-### Coupling Analysis
-
-```
-Job <---> Peon         (bidirectional: job modifies peon, peon calls job)
-Job ---> Island        (queries world state)
-Peon --> Island        (collision checks, entity queries)
-House --> Peon         (assigns jobs directly)
-House --> Job          (creates job instances)
-Entity --> Bitmaps     (rendering resources)
-Entity --> Island      (world reference)
-```
-
-**Problem areas:**
-1. Job classes directly manipulate Peon state (`peon.setJob(null)`, `peon.rot += Math.PI`)
-2. Movement code duplicated between Peon (lines 132-156) and Monster (lines 81-92)
-3. Sound calls scattered: `Sounds.play()` called from Peon, House, Monster, Tower, etc.
-4. House directly creates and assigns Job instances to Peons
-
-## Recommended Architecture
-
-### Target Component Boundaries
-
-```
-+-----------------------------------------------------------------------------+
-|                              TowerComponent                                  |
-|  (game loop, input, orchestration)                                          |
-+-----------------------------------------------------------------------------+
-         |                    |                    |
-         v                    v                    v
-+----------------+   +----------------+   +-------------------+
-| BehaviorSystem |   | MovementSystem |   | RenderingSystem   |
-| (what to do)   |   | (how to move)  |   | (how to display)  |
-+----------------+   +----------------+   +-------------------+
-         |                    |                    |
-         v                    v                    v
-+-----------------------------------------------------------------------------+
-|                              Entity Layer                                    |
-|  Entity, Peon, Monster, House, Tree, etc.                                   |
-|  (data holders with minimal behavior)                                       |
-+-----------------------------------------------------------------------------+
-         |
-         v
-+-----------------------------------------------------------------------------+
-|                              World Layer                                     |
-|  Island (spatial queries), NavigationGrid (walkability)                     |
-+-----------------------------------------------------------------------------+
-```
-
-### Component Responsibilities
-
-| Component | Responsibility | Communicates With |
-|-----------|---------------|-------------------|
-| **BehaviorSystem** | Decides what entities want to do; manages Jobs | MovementSystem (via movement requests), World Layer |
-| **MovementSystem** | Executes movement; pathfinding integration point | World Layer (collision/navigation queries) |
-| **RenderingSystem** | Transforms and draws entities | Entity Layer (read-only), Bitmaps |
-| **World Layer** | Spatial queries, collision, navigation data | (queries only, no outbound calls) |
-| **Entity Layer** | State storage (position, health, job reference) | Accessed by all systems |
-| **EventBus** | Decoupled notifications (sounds, effects, UI) | All systems can publish/subscribe |
-
-### Data Flow After Refactoring
-
-```
-TowerComponent.tick()
-    |
-    +---> BehaviorSystem.update()
-    |         - For each entity with behavior:
-    |         - Job decides target/intent
-    |         - Emits MovementRequest (target position, urgency)
-    |
-    +---> MovementSystem.update()
-    |         - For each MovementRequest:
-    |         - Calculate path (PATHFINDING INTEGRATION POINT)
-    |         - Apply velocity respecting collision
-    |         - Update entity positions
-    |
-    +---> RenderingSystem.render()
-              - Sort entities by Y
-              - Draw each entity
-
-Events (sounds, effects) flow through EventBus, not direct calls.
-```
-
-## Pathfinding Integration Points
+| Component | Role | Location |
+|-----------|------|----------|
+| `MovementSystem` | Single source of truth for movement execution | `movement/MovementSystem.java` |
+| `NavigationGrid` | Interface for walkability/collision queries | `navigation/NavigationGrid.java` |
+| `MovementRequest` | Intent record (entity, targetX, targetY) | `movement/MovementRequest.java` |
+| `MovementResult` | Sealed result (Moved/Blocked) | `movement/MovementResult.java` |
+| `Island` | Implements `NavigationGrid` | `Island.java` |
 
 ### Where Pathfinding Plugs In
 
-The **MovementSystem** becomes the single integration point:
+**Primary Integration Point:** New `Pathfinder` service that computes paths using `NavigationGrid`.
 
-```java
-// Current: Direct movement in Peon.tick()
-double xt = x + Math.cos(rot) * 0.4 * speed;
-if (island.isFree(xt, yt, r, this)) { x = xt; y = yt; }
+```
+Current Flow:
+  Peon.tick() → calculates direction to target → MovementSystem.move(request)
+                                                        ↓
+                                            NavigationGrid.isFree() → position update
 
-// After: MovementSystem handles this
-interface MovementStrategy {
-    Vec2 getNextPosition(Entity entity, Vec2 target, NavigationGrid nav);
-}
-
-class DirectMovement implements MovementStrategy { /* current behavior */ }
-class PathfindingMovement implements MovementStrategy { /* A* integration */ }
+Pathfinding Flow:
+  Peon.tick() → Pathfinder.getNextStep(current, target) → MovementSystem.move(request)
+                        ↓                                          ↓
+           NavigationGrid.isWalkable()              NavigationGrid.isFree() → position update
+                        ↓
+               A* algorithm → cached path → next waypoint
 ```
 
-### Required Supporting Infrastructure
+**Key Insight:** The pathfinder does NOT replace `MovementSystem`. It provides the direction/next position; `MovementSystem` still executes the actual move with collision detection. This separation allows:
+- Pathfinder to work at grid resolution
+- MovementSystem to handle sub-grid movement and dynamic collisions
+- Entity-entity collision still handled by `isFree()` even on a valid path
 
-1. **NavigationGrid**: Queryable grid for walkability
-   - Wraps Island.isOnGround() and Island.isFree()
-   - Cacheable obstacle positions (rocks, trees, houses)
-   - Grid resolution matches pathfinding needs
+### Integration Contract
 
-2. **Vec2 Record**: Immutable position type
-   - Replace raw `double x, y` pairs
-   - Value semantics for pathfinding data structures
-   - Methods: `add()`, `sub()`, `distance()`, `normalize()`
+The pathfinder should:
 
-3. **MovementRequest**: Intent from behavior to movement
-   - Target position
-   - Arrival radius (how close is "arrived")
-   - Priority/urgency
-   - Callback for arrival notification
+1. **Input:** Current position (x, y), target position (targetX, targetY), NavigationGrid reference
+2. **Output:** Next position to move toward (or null if no path exists)
+3. **Query:** Uses `NavigationGrid.isWalkable(x, y)` for static obstacle queries
 
-## Patterns to Apply
+The existing `NavigationGrid.isOnGround(x, y)` method checks walkable terrain. The `isFree()` method checks entity collisions. Pathfinding uses `isOnGround()` for grid queries (static obstacles); `MovementSystem` uses `isFree()` for dynamic collision (entities).
 
-### Pattern 1: Component Pattern for Entities
+## New Components
 
-**What:** Extract rendering and movement into separate component objects within entities.
+### 1. PathfindingGrid Interface
 
-**When:** Peon and Monster have nearly identical movement code; this is the signal.
-
-**Implementation:**
+Extends `NavigationGrid` with grid-specific queries for A*.
 
 ```java
-// Instead of Peon containing all logic:
-class Peon extends Entity {
-    private MovementComponent movement;  // handles position updates
-    private BehaviorComponent behavior;  // handles job/targeting
-    private RenderComponent render;      // handles drawing
+package com.mojang.tower.navigation;
 
-    void tick() {
-        behavior.update(this);  // decides intent
-        // movement handled by MovementSystem
+/**
+ * Grid-based navigation queries for pathfinding algorithms.
+ * Provides discrete cell-based walkability for A* and similar algorithms.
+ */
+public interface PathfindingGrid extends NavigationGrid {
+    /**
+     * Check if a grid cell is walkable (no static obstacles).
+     * Uses discrete grid coordinates, not world coordinates.
+     */
+    boolean isWalkable(int gridX, int gridY);
+
+    /**
+     * Convert world coordinates to grid coordinates.
+     */
+    int toGridX(double worldX);
+    int toGridY(double worldY);
+
+    /**
+     * Convert grid coordinates to world coordinates (cell center).
+     */
+    double toWorldX(int gridX);
+    double toWorldY(int gridY);
+
+    /**
+     * Get the grid dimensions.
+     */
+    int getWidth();
+    int getHeight();
+}
+```
+
+**Rationale:** A* operates on discrete cells, but entities use continuous coordinates. This interface handles the conversion and provides grid-resolution walkability queries.
+
+### 2. GridCell Record
+
+Immutable grid position for A* node representation.
+
+```java
+package com.mojang.tower.pathfinding;
+
+/**
+ * Immutable grid cell position.
+ * Used as keys in A* open/closed sets.
+ */
+public record GridCell(int x, int y) {
+    public double distanceTo(GridCell other) {
+        int dx = other.x - x;
+        int dy = other.y - y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    public int manhattanDistance(GridCell other) {
+        return Math.abs(other.x - x) + Math.abs(other.y - y);
     }
 }
 ```
 
-### Pattern 2: Event Bus for Decoupling
+**Rationale:** Records provide equals/hashCode automatically, essential for HashMap/HashSet usage in A*. Immutability ensures safe use as map keys.
 
-**What:** Replace direct `Sounds.play()` calls with event publishing.
+### 3. Path Record
 
-**When:** Sound calls are scattered across 10+ locations; effects trigger from entity code.
-
-**Implementation:**
+Represents a computed path as a list of waypoints.
 
 ```java
-// Current (coupled):
-public void die() {
-    Sounds.play(new Sound.Death());  // Direct call
-    alive = false;
-}
+package com.mojang.tower.pathfinding;
 
-// After (decoupled):
-public void die() {
-    EventBus.publish(new EntityDiedEvent(this));
-    alive = false;
-}
+import java.util.List;
 
-// SoundSystem subscribes to events
-class SoundSystem {
-    void onEntityDied(EntityDiedEvent e) {
-        if (e.entity instanceof Peon) Sounds.play(new Sound.Death());
-        if (e.entity instanceof Monster) Sounds.play(new Sound.MonsterDeath());
+/**
+ * A computed path from start to goal.
+ * Immutable - paths are computed once and consumed.
+ */
+public record Path(
+    GridCell start,
+    GridCell goal,
+    List<GridCell> waypoints  // Includes goal, excludes start
+) {
+    public boolean isEmpty() {
+        return waypoints.isEmpty();
+    }
+
+    public GridCell nextWaypoint() {
+        return waypoints.isEmpty() ? null : waypoints.get(0);
+    }
+
+    public Path advanceToNext() {
+        if (waypoints.size() <= 1) {
+            return new Path(start, goal, List.of());
+        }
+        return new Path(waypoints.get(0), goal, waypoints.subList(1, waypoints.size()));
     }
 }
 ```
 
-### Pattern 3: Strategy Pattern for Movement
+**Rationale:** Immutable path allows safe caching and sharing. `advanceToNext()` creates new Path instance when entity reaches a waypoint.
 
-**What:** Make movement algorithm swappable per-entity.
+### 4. AStarPathfinder Class
 
-**When:** Preparing for pathfinding without breaking existing behavior.
-
-**Implementation:**
+Core A* algorithm implementation.
 
 ```java
-interface MovementStrategy {
-    void move(Entity entity, MovementIntent intent, World world);
-}
+package com.mojang.tower.pathfinding;
 
-class WanderMovement implements MovementStrategy { /* current random walk */ }
-class DirectMovement implements MovementStrategy { /* beeline to target */ }
-class PathfindMovement implements MovementStrategy { /* A* to target */ }
+import com.mojang.tower.navigation.PathfindingGrid;
+import java.util.*;
+
+/**
+ * A* pathfinding algorithm implementation.
+ * Finds shortest paths on a PathfindingGrid.
+ */
+public final class AStarPathfinder {
+    private final PathfindingGrid grid;
+
+    // Directions: 8-way movement (orthogonal + diagonal)
+    private static final int[][] DIRECTIONS = {
+        {-1, 0}, {1, 0}, {0, -1}, {0, 1},  // orthogonal
+        {-1, -1}, {-1, 1}, {1, -1}, {1, 1}  // diagonal
+    };
+    private static final double DIAGONAL_COST = Math.sqrt(2);
+
+    public AStarPathfinder(PathfindingGrid grid) {
+        this.grid = grid;
+    }
+
+    /**
+     * Find path from start to goal.
+     * @return Path if found, or Path with empty waypoints if no path exists
+     */
+    public Path findPath(GridCell start, GridCell goal) {
+        // A* implementation using PriorityQueue
+        // ... (standard A* algorithm)
+    }
+}
 ```
 
-## Anti-Patterns to Avoid
+**Rationale:** Stateless pathfinder that takes grid reference. Can be reused for multiple path requests. 8-way movement matches game's free movement.
 
-### Anti-Pattern 1: Big Bang ECS Migration
+### 5. PathCache Class
 
-**What:** Completely replacing the entity hierarchy with a pure ECS system.
+Caches computed paths with invalidation support.
 
-**Why bad:**
-- Existing code works; this is a refactor not a rewrite
-- ECS is overkill for ~20 entity types and hundreds of instances
-- Would require rewriting every entity, every test, every behavior
+```java
+package com.mojang.tower.pathfinding;
 
-**Instead:** Extract components incrementally. Keep Entity base class, add component references.
+import com.mojang.tower.Entity;
+import java.util.*;
 
-### Anti-Pattern 2: Movement Logic in Jobs
+/**
+ * Caches paths for entities to avoid recomputation.
+ * Invalidates paths when obstacles change or goals change.
+ */
+public final class PathCache {
+    private final Map<Entity, CachedPath> cache = new HashMap<>();
+    private final AStarPathfinder pathfinder;
 
-**What:** Current Job classes contain movement steering (lines 261-278 in Job.java).
+    public PathCache(AStarPathfinder pathfinder) {
+        this.pathfinder = pathfinder;
+    }
 
-**Why bad:**
-- Jobs should express *intent* (go to X), not *how* to get there
-- Movement steering duplicated if new jobs added
-- Can't swap pathfinding without modifying every Job subclass
+    /**
+     * Get cached path or compute new one.
+     */
+    public Path getPath(Entity entity, GridCell start, GridCell goal) {
+        CachedPath cached = cache.get(entity);
+        if (cached != null && cached.goal.equals(goal) && !cached.isStale()) {
+            return cached.path;
+        }
+        Path path = pathfinder.findPath(start, goal);
+        cache.put(entity, new CachedPath(goal, path, System.currentTimeMillis()));
+        return path;
+    }
 
-**Instead:** Jobs emit MovementRequests; MovementSystem handles execution.
+    /**
+     * Invalidate path for entity (call when obstacle blocks path).
+     */
+    public void invalidate(Entity entity) {
+        cache.remove(entity);
+    }
 
-### Anti-Pattern 3: Callback Hell for Arrival
+    /**
+     * Invalidate all paths (call when major world change).
+     */
+    public void invalidateAll() {
+        cache.clear();
+    }
 
-**What:** Jobs call `arrived()` from within movement code.
+    private record CachedPath(GridCell goal, Path path, long timestamp) {
+        boolean isStale() {
+            // Paths older than 5 seconds are considered stale
+            return System.currentTimeMillis() - timestamp > 5000;
+        }
+    }
+}
+```
 
-**Why bad:**
-- Couples movement completion to behavior in same call stack
-- Complicates pathfinding which may arrive over multiple ticks
+**Rationale:** Per-entity caching avoids recomputation when entities continue toward same goal. Time-based staleness handles world changes not explicitly tracked.
 
-**Instead:** MovementSystem notifies BehaviorSystem via callback or event when arrival occurs.
+### 6. PathfindingService Class
 
-### Anti-Pattern 4: God Class GameLoop
+High-level service coordinating pathfinding for entities.
 
-**What:** TowerComponent handles input, rendering, game state, UI, mouse tracking.
+```java
+package com.mojang.tower.pathfinding;
 
-**Why bad:**
-- Any change risks breaking unrelated functionality
-- Hard to test individual concerns
+import com.mojang.tower.Entity;
+import com.mojang.tower.navigation.PathfindingGrid;
+import com.mojang.tower.Vec;
 
-**Instead:** Extract GameState (State pattern), InputHandler, UIRenderer as separate concerns.
+/**
+ * High-level pathfinding service.
+ * Coordinates grid conversion, path computation, and caching.
+ */
+public final class PathfindingService {
+    private final PathfindingGrid grid;
+    private final AStarPathfinder pathfinder;
+    private final PathCache cache;
 
-## Refactoring Order
+    public PathfindingService(PathfindingGrid grid) {
+        this.grid = grid;
+        this.pathfinder = new AStarPathfinder(grid);
+        this.cache = new PathCache(pathfinder);
+    }
 
-Dependencies must be respected. Here is the recommended sequence:
+    /**
+     * Get next position entity should move toward.
+     * @return World coordinates of next waypoint, or null if no path
+     */
+    public Vec getNextPosition(Entity entity, double targetX, double targetY) {
+        GridCell start = new GridCell(grid.toGridX(entity.x), grid.toGridY(entity.y));
+        GridCell goal = new GridCell(grid.toGridX(targetX), grid.toGridY(targetY));
+
+        // If already at goal cell, return exact target
+        if (start.equals(goal)) {
+            return new Vec(targetX, targetY, 0);
+        }
+
+        Path path = cache.getPath(entity, start, goal);
+        if (path.isEmpty()) {
+            return null;  // No path exists
+        }
+
+        GridCell next = path.nextWaypoint();
+        return new Vec(grid.toWorldX(next.x()), grid.toWorldY(next.y()), 0);
+    }
+
+    /**
+     * Notify that entity reached a waypoint (advance path).
+     */
+    public void waypointReached(Entity entity) {
+        // Update cached path to next segment
+    }
+
+    /**
+     * Invalidate path when entity is blocked.
+     */
+    public void pathBlocked(Entity entity) {
+        cache.invalidate(entity);
+    }
+}
+```
+
+**Rationale:** Single service hides complexity of grid conversion and caching. Entities only need to call `getNextPosition()`.
+
+## Modified Components
+
+### 1. Island.java
+
+Add `PathfindingGrid` implementation.
+
+**Changes:**
+- Implement `PathfindingGrid` interface (extends `NavigationGrid`)
+- Add grid conversion methods based on existing `isOnGround()` scale factor (1.5)
+- Grid resolution: recommend 1 grid cell = 3 world units (matches entity radius ~1-2)
+
+```java
+// Add to Island.java
+@Override
+public boolean isWalkable(int gridX, int gridY) {
+    double worldX = toWorldX(gridX);
+    double worldY = toWorldY(gridY);
+    return isOnGround(worldX, worldY);
+}
+
+@Override
+public int toGridX(double worldX) {
+    return (int) Math.floor((worldX + 192) / 3);  // 256 * 1.5 / 2 = 192 offset
+}
+// ... similar for other methods
+```
+
+**Risk:** LOW - adds methods, no behavior change to existing code.
+
+### 2. Peon.java
+
+Integrate pathfinding into movement calculation.
+
+**Changes:**
+- When Job has target, query `PathfindingService.getNextPosition()` instead of direct angle calculation
+- On `MovementResult.Blocked`, call `PathfindingService.pathBlocked()` to invalidate
+- Preserve existing random wander behavior when no job
+
+**Affected lines:** 117-130 (target direction calculation)
+
+```java
+// Current:
+if (wanderTime == 0 && job != null && job.hasTarget()) {
+    double xd = job.xTarget - x;
+    double yd = job.yTarget - y;
+    // ... direct angle to target
+    rot = Math.atan2(yd, xd);
+}
+
+// With pathfinding:
+if (wanderTime == 0 && job != null && job.hasTarget()) {
+    Vec next = pathfindingService.getNextPosition(this, job.xTarget, job.yTarget);
+    if (next != null) {
+        rot = Math.atan2(next.y() - y, next.x() - x);
+    } else {
+        job.cantReach();  // No path exists
+    }
+}
+```
+
+**Risk:** MEDIUM - core movement logic change, needs golden master validation.
+
+### 3. Monster.java
+
+Similar pathfinding integration for monster movement.
+
+**Affected lines:** 67-79 (target direction calculation)
+
+**Risk:** MEDIUM - same pattern as Peon.
+
+### 4. ServiceLocator.java
+
+Add `PathfindingService` registration.
+
+**Changes:**
+- Add `pathfindingService` field
+- Add `provide(PathfindingService)` and `pathfinding()` methods
+- Update `reset()` to clear pathfinding service
+
+**Risk:** LOW - follows existing pattern for `MovementSystem`.
+
+### 5. TowerComponent.java
+
+Wire pathfinding service at initialization.
+
+**Changes:**
+- Create `PathfindingService` after `Island` creation
+- Register with `ServiceLocator.provide()`
+
+**Risk:** LOW - follows existing initialization pattern.
+
+## Data Flow
+
+### Complete Path Request Flow
+
+```
+1. Peon.tick()
+   |
+   +-- job.hasTarget() → true, job has (xTarget, yTarget)
+   |
+   +-- ServiceLocator.pathfinding().getNextPosition(this, xTarget, yTarget)
+       |
+       +-- PathfindingService.getNextPosition()
+           |
+           +-- Convert world coords to grid coords
+           |
+           +-- PathCache.getPath(entity, start, goal)
+               |
+               +-- Cache hit? → return cached path
+               |
+               +-- Cache miss:
+                   |
+                   +-- AStarPathfinder.findPath(start, goal)
+                       |
+                       +-- PathfindingGrid.isWalkable() queries
+                       |
+                       +-- A* algorithm with PriorityQueue
+                       |
+                       +-- Return Path(waypoints)
+                   |
+                   +-- Store in cache
+           |
+           +-- Path.nextWaypoint() → GridCell
+           |
+           +-- Convert grid coords to world coords → Vec
+   |
+   +-- Calculate rotation: Math.atan2(next.y - y, next.x - x)
+   |
+   +-- Create MovementRequest with next step direction
+   |
+   +-- ServiceLocator.movement().move(request)
+       |
+       +-- MovementSystem.move()
+           |
+           +-- NavigationGrid.isFree() → collision with entities
+           |
+           +-- Return MovementResult.Moved or Blocked
+
+2. If Blocked:
+   |
+   +-- ServiceLocator.pathfinding().pathBlocked(this)
+   |
+   +-- PathCache.invalidate(entity)
+   |
+   +-- Next tick: recompute path around obstacle
+```
+
+### Path Invalidation Triggers
+
+| Trigger | Action | Scope |
+|---------|--------|-------|
+| `MovementResult.Blocked` | `pathBlocked(entity)` | Single entity |
+| Entity reaches waypoint | `waypointReached(entity)` | Single entity |
+| Job target changes | Cache checks goal mismatch | Single entity |
+| Time-based staleness | 5 second expiry | Single entity |
+| Major world change (building placed) | `invalidateAll()` | All entities |
+
+## Build Order
+
+Recommended implementation sequence based on dependencies:
 
 ### Phase 1: Foundation (No Behavior Change)
 
-| Step | What | Why First | Depends On |
-|------|------|-----------|------------|
-| 1.1 | Create `Vec2` record | Used everywhere; no behavior change | Nothing |
-| 1.2 | Create `EventBus` | Enables decoupling without changing behavior | Nothing |
-| 1.3 | Extract `GameState` (State pattern) | Removes flags from TowerComponent | Nothing |
+| Step | Component | Why First |
+|------|-----------|-----------|
+| 1.1 | `GridCell` record | No dependencies, used by everything |
+| 1.2 | `Path` record | Depends only on GridCell |
+| 1.3 | `PathfindingGrid` interface | Extends NavigationGrid |
 
-### Phase 2: World Layer (Enables Pathfinding)
+**Verification:** Compiles, no runtime changes.
 
-| Step | What | Why Here | Depends On |
-|------|------|----------|------------|
-| 2.1 | Create `NavigationGrid` interface | Abstracts walkability queries | Vec2 |
-| 2.2 | Implement `IslandNavigationGrid` | Wraps current Island methods | NavigationGrid |
-| 2.3 | Extract `SpatialIndex` from Island | Faster entity queries (optional) | Nothing |
+### Phase 2: Algorithm Implementation
 
-### Phase 3: Movement Extraction (Critical Path)
+| Step | Component | Depends On |
+|------|-----------|------------|
+| 2.1 | `AStarPathfinder` class | GridCell, Path, PathfindingGrid |
+| 2.2 | Unit tests for A* | AStarPathfinder |
 
-| Step | What | Why Here | Depends On |
-|------|------|----------|------------|
-| 3.1 | Define `MovementStrategy` interface | Abstraction before implementation | Vec2 |
-| 3.2 | Extract `DirectMovement` from Peon | Current behavior as strategy | MovementStrategy |
-| 3.3 | Create `MovementComponent` | Holds strategy + movement state | DirectMovement |
-| 3.4 | Refactor Peon to use MovementComponent | Critical coupling break | MovementComponent |
-| 3.5 | Refactor Monster to use same component | Removes duplication | MovementComponent |
+**Verification:** Unit tests pass for pathfinding algorithm in isolation.
 
-### Phase 4: Behavior Extraction
+### Phase 3: Island Grid Integration
 
-| Step | What | Why Here | Depends On |
-|------|------|----------|------------|
-| 4.1 | Define `MovementRequest` type | Intent from behavior to movement | Vec2 |
-| 4.2 | Refactor Jobs to emit MovementRequests | Decouples job from movement execution | MovementRequest |
-| 4.3 | Create `BehaviorComponent` | Holds job reference + state | MovementRequest |
-| 4.4 | Wire arrival callbacks | Movement notifies behavior | BehaviorComponent, MovementComponent |
+| Step | Component | Depends On |
+|------|-----------|------------|
+| 3.1 | `Island` implements `PathfindingGrid` | PathfindingGrid interface |
+| 3.2 | Grid conversion tests | Island changes |
 
-### Phase 5: Rendering Extraction (Low Priority)
+**Verification:** Grid queries work correctly, existing behavior unchanged.
 
-| Step | What | Why Last | Depends On |
-|------|------|----------|------------|
-| 5.1 | Define `Renderable` interface | Standardize rendering contract | Nothing |
-| 5.2 | Extract render methods to components | Cleaner separation | Renderable |
+### Phase 4: Service Layer
 
-### Phase 6: Event Integration
+| Step | Component | Depends On |
+|------|-----------|------------|
+| 4.1 | `PathCache` class | AStarPathfinder, Entity |
+| 4.2 | `PathfindingService` class | PathCache, PathfindingGrid |
+| 4.3 | `ServiceLocator` registration | PathfindingService |
+| 4.4 | `TowerComponent` wiring | ServiceLocator |
 
-| Step | What | Why Here | Depends On |
-|------|------|----------|------------|
-| 6.1 | Replace Sounds.play() calls with events | Full decoupling | EventBus |
-| 6.2 | Create SoundSystem subscriber | Centralizes sound logic | EventBus |
-| 6.3 | Replace effect spawning with events | Consistent pattern | EventBus |
+**Verification:** Service can be obtained via ServiceLocator.
 
-## Dependency Diagram
+### Phase 5: Entity Integration
+
+| Step | Component | Depends On |
+|------|-----------|------------|
+| 5.1 | `Peon` pathfinding integration | PathfindingService |
+| 5.2 | `Monster` pathfinding integration | PathfindingService |
+| 5.3 | Golden master test validation | All above |
+
+**Verification:** Golden master tests pass, entities navigate around obstacles.
+
+### Dependency Diagram
 
 ```
-Vec2 (foundation)
-  |
-  +---> NavigationGrid
-  |         |
-  |         +---> MovementStrategy
-  |                   |
-  |                   +---> MovementComponent
-  |                             |
-  +---> MovementRequest         |
-            |                   |
-            +---> BehaviorComponent
-                      |
-                      +---> [Pathfinding can now be added]
-
-EventBus (parallel track)
-  |
-  +---> SoundSystem
-  +---> EffectSystem
+GridCell (record)
+    |
+    v
+Path (record)
+    |
+    v
+PathfindingGrid (interface) ←── NavigationGrid
+    |
+    +──────────────────────┐
+    |                      |
+    v                      v
+AStarPathfinder       Island (implements)
+    |
+    v
+PathCache
+    |
+    v
+PathfindingService ──────→ ServiceLocator
+    |
+    +────────────────┐
+    |                |
+    v                v
+  Peon           Monster
 ```
 
-## Pathfinding Readiness Checklist
+## Grid Resolution Considerations
 
-After completing Phases 1-4, pathfinding can be added by:
+The existing world uses continuous coordinates with:
+- Island bitmap: 256x256 pixels
+- Coordinate range: approximately -192 to +192 (256 * 1.5 / 2)
+- Entity radii: 1-2 units (Peon r=1, Monster r=2, House r=4-8)
 
-- [ ] Implementing `PathfindingMovement` strategy
-- [ ] Implementing A* or similar using NavigationGrid
-- [ ] Configuring which entities use pathfinding vs direct movement
-- [ ] No changes needed to Job classes, House logic, or combat
+**Recommended grid resolution:** 3 world units per cell
 
-This is the target architectural state.
+- Grid size: ~128x128 cells
+- Cell size larger than entity radius ensures entities fit in cells
+- Balances path accuracy vs. A* performance
+- Approximately 16,384 cells - manageable for A*
 
-## Java 21 Features to Apply
+**Alternative:** 2 units per cell (192x192 grid, ~37,000 cells) for finer paths but more computation.
 
-| Feature | Where | Benefit |
-|---------|-------|---------|
-| **Records** | Vec2, MovementRequest, events | Immutable value types with equals/hashCode |
-| **Sealed classes** | Entity hierarchy, Job types | Exhaustive pattern matching |
-| **Pattern matching** | Event handling, entity type checks | Cleaner instanceof handling |
-| **Switch expressions** | State transitions, type dispatch | Concise, exhaustive |
+## Performance Considerations
+
+### A* Complexity
+
+For a 128x128 grid:
+- Worst case: O(n log n) where n = 16,384 cells
+- Typical case: much lower due to heuristic guidance
+- Expected path computation: <1ms on modern hardware
+
+### Caching Strategy
+
+- **Per-entity caching:** Each entity maintains its own cached path
+- **Goal-based invalidation:** Path recomputed only when goal changes
+- **Time-based expiry:** 5 second staleness threshold catches world changes
+- **Explicit invalidation:** `pathBlocked()` triggers recomputation on collision
+
+### When NOT to Cache
+
+- Very short paths (< 5 cells): Recomputation is cheap
+- Rapidly changing targets: Cache thrashing overhead
+- Consider direct movement fallback for adjacent targets
+
+## Fallback Behavior
+
+The pathfinding system should gracefully handle edge cases:
+
+| Scenario | Behavior |
+|----------|----------|
+| No path exists | Return null, job calls `cantReach()` |
+| Start/goal same cell | Return exact target position (direct movement) |
+| Pathfinding takes too long | Time-limit A* iterations, return partial path |
+| Grid not initialized | Fall back to direct movement |
+
+## Testing Strategy
+
+### Unit Tests (Phase 2)
+
+- A* finds path on simple grid
+- A* returns empty path when blocked
+- A* handles diagonal movement
+- Heuristic admissibility (never overestimates)
+
+### Integration Tests (Phase 3-4)
+
+- Island grid conversion round-trips correctly
+- PathCache invalidation works
+- ServiceLocator wiring correct
+
+### Golden Master Tests (Phase 5)
+
+- Existing behavior preserved when pathfinding disabled
+- Entities navigate around obstacles
+- Jobs complete successfully with pathfinding
+- Performance acceptable (no frame drops)
 
 ## Sources
 
-- [Game Programming Patterns - Decoupling Patterns](https://gameprogrammingpatterns.com/decoupling-patterns.html) (HIGH confidence)
-- [Game Programming Patterns - Component Pattern](https://gameprogrammingpatterns.com/component.html) (HIGH confidence)
-- [Entity Component System - Wikipedia](https://en.wikipedia.org/wiki/Entity_component_system) (MEDIUM confidence)
-- [ECS FAQ - GitHub](https://github.com/SanderMertens/ecs-faq) (MEDIUM confidence)
-- [Java Design Patterns - Component](https://java-design-patterns.com/patterns/component/) (MEDIUM confidence)
-- Direct codebase analysis of Breaking the Tower (HIGH confidence)
+### Primary (HIGH confidence)
+
+- [Implementing A* Pathfinding in Java | Baeldung](https://www.baeldung.com/java-a-star-pathfinding)
+- [Pathfinding API - gdx-ai Wiki | GitHub](https://github.com/libgdx/gdx-ai/wiki/Pathfinding-API)
+- [Dealing with Moving Obstacles | Stanford](http://theory.stanford.edu/~amitp/GameProgramming/MovingObstacles.html)
+- Direct codebase analysis of Breaking the Tower v1 architecture
+
+### Secondary (MEDIUM confidence)
+
+- [Pathfinding Architecture Optimizations | Game AI Pro](http://www.gameaipro.com/GameAIPro/GameAIPro_Chapter17_Pathfinding_Architecture_Optimizations.pdf)
+- [RTS Pathfinding: Flowfields | jdxdev](https://www.jdxdev.com/blog/2020/05/03/flowfields/)
+- [A* Pathfinding Project Documentation](https://arongranberg.com/astar/documentation/stable/optimization.html)
+- [Pathfinding with A Star Algorithm in Java | Medium](https://medium.com/@AlexanderObregon/pathfinding-with-the-a-star-algorithm-in-java-3a66446a2352)
+- [Dynamic Pathfinding Algorithms in Game Development | peerdh](https://peerdh.com/blogs/programming-insights/dynamic-pathfinding-algorithms-in-game-development)
 
 ---
-*Research produced for roadmap phase planning. Movement extraction (Phase 3) is the critical path for pathfinding enablement.*
+
+*Architecture research for v2 pathfinding milestone. Integrates with existing v1 MovementSystem architecture.*
