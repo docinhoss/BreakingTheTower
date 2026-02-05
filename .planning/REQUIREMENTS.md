@@ -25,11 +25,11 @@ Requirements for this modernization milestone. Each maps to roadmap phases.
 
 ### Design Patterns
 
-- [ ] **PTRN-01**: Game states (title/playing/won) use State pattern
-- [ ] **PTRN-02**: EventBus created for decoupled event handling
-- [ ] **PTRN-03**: Sound effects triggered via events instead of direct Sounds.play() calls
-- [ ] **PTRN-04**: Visual effects (Puffs) triggered via events
-- [ ] **PTRN-05**: Service Locator wraps Sounds singleton
+- [x] **PTRN-01**: Game states (title/playing/won) use State pattern
+- [x] **PTRN-02**: EventBus created for decoupled event handling
+- [x] **PTRN-03**: Sound effects triggered via events instead of direct Sounds.play() calls
+- [x] **PTRN-04**: Visual effects (Puffs) triggered via events
+- [x] **PTRN-05**: Service Locator wraps Sounds singleton
 
 ### Architecture
 
@@ -86,11 +86,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LANG-05 | Phase 1 | Complete |
 | LANG-06 | Phase 1 | Complete |
 | LANG-07 | Phase 1 | Complete |
-| PTRN-01 | Phase 2 | Pending |
-| PTRN-02 | Phase 2 | Pending |
-| PTRN-03 | Phase 2 | Pending |
-| PTRN-04 | Phase 2 | Pending |
-| PTRN-05 | Phase 2 | Pending |
+| PTRN-01 | Phase 2 | Complete |
+| PTRN-02 | Phase 2 | Complete |
+| PTRN-03 | Phase 2 | Complete |
+| PTRN-04 | Phase 2 | Complete |
+| PTRN-05 | Phase 2 | Complete |
 | ARCH-01 | Phase 3 | Pending |
 | ARCH-02 | Phase 3 | Pending |
 | ARCH-03 | Phase 3 | Pending |
@@ -107,4 +107,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 - Phase 1 complete (8 requirements satisfied)*
+*Last updated: 2026-02-05 - Phase 2 complete (13 requirements satisfied)*
