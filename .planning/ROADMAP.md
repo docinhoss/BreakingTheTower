@@ -44,11 +44,11 @@ Plans:
   3. No direct Sounds.play() calls remain in entity or job classes
   4. Service Locator provides access to Sounds (testable, swappable)
   5. Golden master tests still pass (behavior preserved)
-**Plans**: TBD
+**Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md — EventBus + ServiceLocator + sound event refactoring (Wave 1)
+- [ ] 02-02-PLAN.md — State pattern + effect event refactoring (Wave 2)
 
 ### Phase 3: Movement Extraction
 **Goal**: Separate movement execution from behavior logic, creating the integration point for future pathfinding
