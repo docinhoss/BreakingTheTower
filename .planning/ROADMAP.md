@@ -24,7 +24,7 @@ See `.planning/milestones/v1-ROADMAP.md` for archived v1 roadmap.
 
 **Milestone Goal:** Peons navigate intelligently around obstacles instead of bumping repeatedly.
 
-- [ ] **Phase 5: Core A* and Integration** - Deterministic pathfinding with MovementSystem integration
+- [x] **Phase 5: Core A* and Integration** - Deterministic pathfinding with MovementSystem integration
 - [ ] **Phase 6: Unreachable Handling** - Graceful handling of blocked targets
 - [ ] **Phase 7: Dynamic Recalculation** - Path updates when world changes
 
@@ -88,4 +88,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-02-05*
-*Last updated: 2026-02-05 - Completed 05-02-PLAN.md (Phase 5 complete)*
+*Last updated: 2026-02-05 - Phase 5 verified complete*

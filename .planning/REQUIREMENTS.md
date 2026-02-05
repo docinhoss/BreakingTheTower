@@ -9,10 +9,10 @@ Requirements for pathfinding milestone. Each maps to roadmap phases.
 
 ### Core Algorithm
 
-- [ ] **PATH-01**: Peon finds walkable route to target around static obstacles
-- [ ] **PATH-02**: Peon navigates using 8-directional movement (including diagonals)
-- [ ] **PATH-03**: Pathfinding uses deterministic data structures (golden master compatibility)
-- [ ] **PATH-04**: Pathfinding completes within tick budget (no frame drops)
+- [x] **PATH-01**: Peon finds walkable route to target around static obstacles
+- [x] **PATH-02**: Peon navigates using 8-directional movement (including diagonals)
+- [x] **PATH-03**: Pathfinding uses deterministic data structures (golden master compatibility)
+- [x] **PATH-04**: Pathfinding completes within tick budget (no frame drops)
 
 ### Unreachable Handling
 
@@ -28,9 +28,9 @@ Requirements for pathfinding milestone. Each maps to roadmap phases.
 
 ### Integration
 
-- [ ] **INT-01**: Pathfinding integrates with existing MovementSystem
-- [ ] **INT-02**: Pathfinding uses NavigationGrid for walkability queries
-- [ ] **INT-03**: PathfindingService accessible via ServiceLocator
+- [x] **INT-01**: Pathfinding integrates with existing MovementSystem
+- [x] **INT-02**: Pathfinding uses NavigationGrid for walkability queries
+- [x] **INT-03**: PathfindingService accessible via ServiceLocator
 
 ## Future Requirements
 
@@ -65,13 +65,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PATH-01 | Phase 5 | Pending |
-| PATH-02 | Phase 5 | Pending |
-| PATH-03 | Phase 5 | Pending |
-| PATH-04 | Phase 5 | Pending |
-| INT-01 | Phase 5 | Pending |
-| INT-02 | Phase 5 | Pending |
-| INT-03 | Phase 5 | Pending |
+| PATH-01 | Phase 5 | Complete |
+| PATH-02 | Phase 5 | Complete |
+| PATH-03 | Phase 5 | Complete |
+| PATH-04 | Phase 5 | Complete |
+| INT-01 | Phase 5 | Complete |
+| INT-02 | Phase 5 | Complete |
+| INT-03 | Phase 5 | Complete |
 | REACH-01 | Phase 6 | Pending |
 | REACH-02 | Phase 6 | Pending |
 | REACH-03 | Phase 6 | Pending |
@@ -86,4 +86,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 — traceability updated with phase mappings*
+*Last updated: 2026-02-05 — Phase 5 requirements complete (7/13)*
