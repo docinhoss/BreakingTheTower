@@ -2,7 +2,7 @@ package com.mojang.tower;
 
 import java.awt.Graphics2D;
 
-public class Tower extends Entity
+public final class Tower extends Entity
 {
     private static final boolean DEBUG = false;
     private int h = 0;

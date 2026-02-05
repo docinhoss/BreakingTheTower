@@ -9,7 +9,7 @@ import com.mojang.tower.movement.MovementRequest;
 import com.mojang.tower.movement.MovementResult;
 import com.mojang.tower.service.ServiceLocator;
 
-public class Monster extends Entity
+public final class Monster extends Entity
 {
     private static final int[] animSteps = { 0, 1, 0, 2 };
     private static final int[] animDirs = { 2, 0, 3, 1 };

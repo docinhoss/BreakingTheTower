@@ -2,7 +2,7 @@ package com.mojang.tower;
 
 import java.awt.Graphics2D;
 
-public class Tree extends Entity
+public final class Tree extends Entity
 {
     public static final int GROW_SPEED = 320;
     public static final int SPREAD_INTERVAL = 30000;

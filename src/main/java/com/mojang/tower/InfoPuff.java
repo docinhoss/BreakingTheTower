@@ -2,7 +2,7 @@ package com.mojang.tower;
 
 import java.awt.Graphics2D;
 
-public class InfoPuff extends Entity
+public final class InfoPuff extends Entity
 {
     public void updatePos(double sin, double cos, double alpha)
     {
