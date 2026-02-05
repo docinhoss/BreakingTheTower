@@ -7,6 +7,7 @@ import com.mojang.tower.event.EventBus;
 import com.mojang.tower.event.DestroySound;
 import com.mojang.tower.event.FinishBuildingSound;
 import com.mojang.tower.event.GatherSound;
+import com.mojang.tower.event.PuffEffect;
 import com.mojang.tower.event.SpawnSound;
 
 public class House extends Entity
@@ -248,7 +249,7 @@ public class House extends Entity
 
     public void puff()
     {
-        island.addEntity(new Puff(x, y));
+        EventBus.publish(new PuffEffect(x, y));
     }
 
     public void sell()

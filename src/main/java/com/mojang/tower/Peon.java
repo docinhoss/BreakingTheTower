@@ -6,6 +6,7 @@ import java.awt.Graphics2D;
 import com.mojang.tower.event.EventBus;
 import com.mojang.tower.event.DeathSound;
 import com.mojang.tower.event.DingSound;
+import com.mojang.tower.event.InfoPuffEffect;
 
 public class Peon extends Entity
 {
@@ -212,7 +213,7 @@ public class Peon extends Entity
         if (xp==nextLevel)
         {
             nextLevel = nextLevel*2+1;
-            island.addEntity(new InfoPuff(x, y, 0));
+            EventBus.publish(new InfoPuffEffect(x, y, 0));
             hp+=10;
             maxHp+=10;
             level++;

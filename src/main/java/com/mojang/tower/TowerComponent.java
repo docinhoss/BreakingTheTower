@@ -109,6 +109,7 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
         // Initialize services and wire event handlers
         ServiceLocator.initializeDefaults();
         EventBus.subscribe(SoundEvent.class, this::handleSoundEvent);
+        EventBus.subscribe(EffectEvent.class, this::handleEffectEvent);
 
         island = new Island(this, bitmaps.island);
     }
@@ -130,6 +131,15 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
             case WinSound() -> new Sound.WinSound();
         };
         ServiceLocator.audio().play(sound);
+    }
+
+    private void handleEffectEvent(EffectEvent event)
+    {
+        switch (event)
+        {
+            case PuffEffect(var x, var y) -> island.addEntity(new Puff(x, y));
+            case InfoPuffEffect(var x, var y, var img) -> island.addEntity(new InfoPuff(x, y, img));
+        }
     }
 
     public void run()
