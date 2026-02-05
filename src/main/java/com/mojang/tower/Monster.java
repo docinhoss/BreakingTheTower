@@ -3,6 +3,9 @@ package com.mojang.tower;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
+import com.mojang.tower.event.EventBus;
+import com.mojang.tower.event.MonsterDeathSound;
+
 public class Monster extends Entity
 {
     private static final int[] animSteps = { 0, 1, 0, 2 };
@@ -30,7 +33,7 @@ public class Monster extends Entity
 
     public void die()
     {
-        Sounds.play(new Sound.MonsterDeath());
+        EventBus.publish(new MonsterDeathSound());
         island.monsterPopulation--;
         alive = false;
     }

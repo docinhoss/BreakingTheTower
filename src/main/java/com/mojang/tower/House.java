@@ -3,6 +3,12 @@ package com.mojang.tower;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
+import com.mojang.tower.event.EventBus;
+import com.mojang.tower.event.DestroySound;
+import com.mojang.tower.event.FinishBuildingSound;
+import com.mojang.tower.event.GatherSound;
+import com.mojang.tower.event.SpawnSound;
+
 public class House extends Entity
 {
     private static final int POPULATION_PER_RESIDENCE = 10;
@@ -34,7 +40,7 @@ public class House extends Entity
 
     public void die()
     {
-        Sounds.play(new Sound.Destroy());
+        EventBus.publish(new DestroySound());
         if (type == HouseType.RESIDENCE)
         {
             island.populationCap -= POPULATION_PER_RESIDENCE;
@@ -61,7 +67,7 @@ public class House extends Entity
     {
         if (buildTime >= buildDuration && type.acceptResource == resourceId)
         {
-            Sounds.play(new Sound.Gather());
+            EventBus.publish(new GatherSound());
             puff();
             return true;
         }
@@ -77,7 +83,7 @@ public class House extends Entity
             if (hp > maxHp) hp = maxHp;
             if (buildTime == buildDuration)
             {
-                Sounds.play(new Sound.FinishBuilding());
+                EventBus.publish(new FinishBuildingSound());
                 if (type == HouseType.RESIDENCE)
                 {
                     island.populationCap += POPULATION_PER_RESIDENCE;
@@ -175,7 +181,7 @@ public class House extends Entity
                     puff();
                     island.resources.food -= FOOD_PER_PEON;
                     island.addEntity(peon);
-                    Sounds.play(new Sound.Spawn());
+                    EventBus.publish(new SpawnSound());
                 }
             }
         }

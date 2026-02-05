@@ -3,6 +3,9 @@ package com.mojang.tower;
 import java.awt.image.*;
 import java.util.*;
 
+import com.mojang.tower.event.EventBus;
+import com.mojang.tower.event.PlantSound;
+
 public class Island
 {
     private TowerComponent tower;
@@ -235,7 +238,7 @@ public class Island
             var newHouse = new House(xp, yp, type);
             if (isFree(newHouse.x, newHouse.y, newHouse.r))
             {
-                Sounds.play(new Sound.Plant());
+                EventBus.publish(new PlantSound());
                 addEntity(newHouse);
                 resources.charge(type);
             }
