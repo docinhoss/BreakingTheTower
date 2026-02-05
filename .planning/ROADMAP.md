@@ -27,12 +27,12 @@ This roadmap transforms Breaking the Tower from Java 1.6 to Java 21 through incr
   3. Vec is a record with value semantics (immutable, auto equals/hashCode)
   4. Pattern matching replaces instanceof+cast chains throughout codebase
   5. Modern syntax (var, switch expressions) used where it improves readability
-**Plans**: TBD
+**Plans**: 3 plans in 3 waves
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
-- [ ] 01-03: TBD
+- [ ] 01-01-PLAN.md — Maven setup + Java 21 compilation (Wave 1)
+- [ ] 01-02-PLAN.md — Golden master test infrastructure (Wave 2)
+- [ ] 01-03-PLAN.md — Vec record + syntax modernization (Wave 3)
 
 ### Phase 2: Decoupling Systems
 **Goal**: Break tight coupling between entities and global services (sounds, effects) using event-driven patterns
@@ -89,7 +89,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Language Modernization | 0/3 | Not started | - |
+| 1. Foundation & Language Modernization | 0/3 | Planned | - |
 | 2. Decoupling Systems | 0/2 | Not started | - |
 | 3. Movement Extraction | 0/2 | Not started | - |
 | 4. Navigation & Sealed Hierarchies | 0/2 | Not started | - |
