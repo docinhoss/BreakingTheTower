@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** A clean, extensible architecture that makes adding pathfinding straightforward
-**Current focus:** v2 Pathfinding — A*, caching, dynamic recalculation
+**Current focus:** v2 Pathfinding — Phase 5: Core A* and Integration
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements for v2 Pathfinding
-Last activity: 2026-02-05 — Milestone v2 started
+Phase: 5 of 7 (Core A* and Integration)
+Plan: 0 of ? in current phase
+Status: Ready to plan
+Last activity: 2026-02-05 — Roadmap created for v2 milestone
 
-Progress: Defining requirements
+Progress: [####------] 36% (v1 complete, v2 starting)
 
 ## v1 Milestone Complete
 
@@ -22,19 +22,6 @@ Progress: Defining requirements
 **Phases:** 4 phases (11 plans)
 **Requirements:** 19/19 satisfied
 **Report:** .planning/MILESTONES.md
-
-**v1 Deliverables:**
-- Golden master test (5000 ticks)
-- Java 21 modernization (records, sealed classes, pattern matching)
-- EventBus and ServiceLocator patterns
-- MovementSystem extraction
-- NavigationGrid interface
-- Sealed Entity/Job hierarchies
-
-**v1 Archives:**
-- .planning/milestones/v1-ROADMAP.md
-- .planning/milestones/v1-REQUIREMENTS.md
-- .planning/milestones/v1-MILESTONE-AUDIT.md
 
 ## Performance Metrics (v1)
 
@@ -47,28 +34,35 @@ Progress: Defining requirements
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 3 | 15 min | 5 min |
-| 02-decoupling | 2 | 13 min | 6.5 min |
-| 03-movement | 3 | 7 min | 2.3 min |
-| 04-navigation | 3 | 7 min | 2.3 min |
+| 01-Foundation | 3 | 15 min | 5 min |
+| 02-Decoupling | 2 | 13 min | 6.5 min |
+| 03-Movement | 3 | 7 min | 2.3 min |
+| 04-Navigation | 3 | 7 min | 2.3 min |
 
-## v2 Candidate Goals
+## Accumulated Context
 
-**Pathfinding:**
-- A* algorithm implementation
-- Path caching
-- Dynamic recalculation
+### Decisions
 
-**Performance:**
-- Spatial partitioning
-- Object pooling for Puffs
+Decisions logged in PROJECT.md Key Decisions table.
+Recent decisions affecting v2:
+- Synchronous EventBus (determinism requires immediate processing)
+- MovementSystem as single source of truth (pathfinding integration point)
+- NavigationGrid interface (dependency inversion for pathfinding queries)
+
+### Pending Todos
+
+None yet.
+
+### Blockers/Concerns
+
+None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-05T21:30:00Z
-Stopped at: v1 milestone complete
+Last session: 2026-02-05T22:00:00Z
+Stopped at: v2 roadmap created
 Resume file: None
 
 ---
 *State initialized: 2026-02-05*
-*Last updated: 2026-02-05 — v2 milestone started*
+*Last updated: 2026-02-05 — v2 roadmap created*

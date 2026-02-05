@@ -65,25 +65,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PATH-01 | TBD | Pending |
-| PATH-02 | TBD | Pending |
-| PATH-03 | TBD | Pending |
-| PATH-04 | TBD | Pending |
-| REACH-01 | TBD | Pending |
-| REACH-02 | TBD | Pending |
-| REACH-03 | TBD | Pending |
-| DYN-01 | TBD | Pending |
-| DYN-02 | TBD | Pending |
-| DYN-03 | TBD | Pending |
-| INT-01 | TBD | Pending |
-| INT-02 | TBD | Pending |
-| INT-03 | TBD | Pending |
+| PATH-01 | Phase 5 | Pending |
+| PATH-02 | Phase 5 | Pending |
+| PATH-03 | Phase 5 | Pending |
+| PATH-04 | Phase 5 | Pending |
+| INT-01 | Phase 5 | Pending |
+| INT-02 | Phase 5 | Pending |
+| INT-03 | Phase 5 | Pending |
+| REACH-01 | Phase 6 | Pending |
+| REACH-02 | Phase 6 | Pending |
+| REACH-03 | Phase 6 | Pending |
+| DYN-01 | Phase 7 | Pending |
+| DYN-02 | Phase 7 | Pending |
+| DYN-03 | Phase 7 | Pending |
 
 **Coverage:**
 - v2 requirements: 13 total
-- Mapped to phases: 0
-- Unmapped: 13 (awaiting roadmap)
+- Mapped to phases: 13
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 after initial definition*
+*Last updated: 2026-02-05 — traceability updated with phase mappings*
