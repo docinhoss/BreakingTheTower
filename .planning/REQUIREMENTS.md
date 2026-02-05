@@ -17,8 +17,8 @@ Requirements for this modernization milestone. Each maps to roadmap phases.
 
 - [x] **LANG-01**: Vec class converted to record with value semantics
 - [x] **LANG-02**: Cost/resource data represented as records
-- [ ] **LANG-03**: Entity hierarchy sealed with explicit permitted subtypes
-- [ ] **LANG-04**: Job interface sealed with explicit permitted implementations
+- [x] **LANG-03**: Entity hierarchy sealed with explicit permitted subtypes
+- [x] **LANG-04**: Job class sealed with explicit permitted implementations
 - [x] **LANG-05**: instanceof checks replaced with pattern matching
 - [x] **LANG-06**: Switch statements modernized to switch expressions where applicable
 - [x] **LANG-07**: var used for local variables where type is obvious
@@ -37,8 +37,8 @@ Requirements for this modernization milestone. Each maps to roadmap phases.
 - [x] **ARCH-02**: Movement logic in Peon decoupled from behavior logic
 - [x] **ARCH-03**: Movement logic in Monster decoupled from behavior logic
 - [x] **ARCH-04**: Jobs request movement via MovementSystem instead of direct position updates
-- [ ] **ARCH-05**: NavigationGrid interface created for world queries
-- [ ] **ARCH-06**: Island implements NavigationGrid for collision/walkability queries
+- [x] **ARCH-05**: NavigationGrid interface created for world queries
+- [x] **ARCH-06**: Island implements NavigationGrid for collision/walkability queries
 
 ## v2 Requirements
 
@@ -95,10 +95,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ARCH-02 | Phase 3 | Complete |
 | ARCH-03 | Phase 3 | Complete |
 | ARCH-04 | Phase 3 | Complete |
-| LANG-03 | Phase 4 | Pending |
-| LANG-04 | Phase 4 | Pending |
-| ARCH-05 | Phase 4 | Pending |
-| ARCH-06 | Phase 4 | Pending |
+| LANG-03 | Phase 4 | Complete |
+| LANG-04 | Phase 4 | Complete |
+| ARCH-05 | Phase 4 | Complete |
+| ARCH-06 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 19 total
@@ -107,4 +107,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 - Phase 3 complete (17 requirements satisfied)*
+*Last updated: 2026-02-05 - Phase 4 complete (19/19 v1 requirements satisfied)*
