@@ -18,7 +18,7 @@ public class HouseType
     public final int image;
     public final int radius;
     public final String name;
-    public final int wood, rock, food;
+    public final Cost cost;
     public int acceptResource = -1;
 
     private static int id = 0;
@@ -28,9 +28,7 @@ public class HouseType
         this.image = image;
         this.name = name;
         this.radius = radius;
-        this.wood = wood;
-        this.rock = rock;
-        this.food = food;
+        this.cost = new Cost(wood, rock, food);
         houseTypes[id++] = this;
     }
 
@@ -48,9 +46,9 @@ public class HouseType
     public String getString()
     {
         String res = name + " [";
-        if (wood > 0) res += " wood:" + wood;
-        if (rock > 0) res += " rock:" + rock;
-        if (food > 0) res += " food:" + food;
+        if (cost.wood() > 0) res += " wood:" + cost.wood();
+        if (cost.rock() > 0) res += " rock:" + cost.rock();
+        if (cost.food() > 0) res += " food:" + cost.food();
         res += " ]";
         return res;
     }

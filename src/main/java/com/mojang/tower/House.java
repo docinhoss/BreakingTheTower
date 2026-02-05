@@ -245,8 +245,8 @@ public class House extends Entity
 
     public void sell()
     {
-        island.resources.wood += type.wood * 3 * hp / (maxHp * 4);
-        island.resources.rock += type.rock * 3 * hp / (maxHp * 4);
+        island.resources.wood += type.cost.wood() * 3 * hp / (maxHp * 4);
+        island.resources.rock += type.cost.rock() * 3 * hp / (maxHp * 4);
         die();
     }
 }
