@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 2 of 4 (Decoupling Systems)
-Plan: 0 of 2 in current phase
-Status: Ready to plan Phase 2
-Last activity: 2026-02-05 - Phase 1 complete, verified
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-05 - Completed 02-01-PLAN.md (EventBus and Sound Decoupling)
 
-Progress: [███░░░░░░░] 25% (3/12 plans)
+Progress: [████░░░░░░] 33% (4/12 plans)
 
 ## Phase 1 Completion
 
@@ -25,19 +25,20 @@ Progress: [███░░░░░░░] 25% (3/12 plans)
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: 5 min
-- Total execution time: 15 min
+- Total execution time: 20 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 15 min | 5 min |
+| 02-decoupling | 1 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (5 min), 01-03 (8 min)
-- Trend: Increasing slightly due to code complexity
+- Last 5 plans: 01-01 (2 min), 01-02 (5 min), 01-03 (8 min), 02-01 (5 min)
+- Trend: Stable velocity
 
 *Updated after each plan completion*
 
@@ -57,6 +58,9 @@ Recent decisions affecting current work:
 - 01-03: Pattern matching only where cast follows instanceof (not pure type checks)
 - 01-03: var only for local variables where type obvious from RHS (new expressions)
 - 01-03: Switch expression with default case to match original silent-ignore behavior
+- 02-01: Split SoundEvent records into separate public files (Java single public class per file requirement)
+- 02-01: Synchronous EventBus dispatch (critical for game determinism)
+- 02-01: ConcurrentHashMap + CopyOnWriteArrayList for thread-safe listener management
 
 ### Pending Todos
 
@@ -73,10 +77,14 @@ None.
 - Golden master snapshot generated and committed (577MB, 5000 ticks)
 - Test passes in 4.2s, providing safety net for future refactoring
 
+**From Phase 2:**
+- EventBus infrastructure complete, pattern established for sound events
+- ServiceLocator ready for additional services (e.g., EffectsService for puffs)
+
 ## Session Continuity
 
-Last session: 2026-02-05
-Stopped at: Phase 1 verified and complete
+Last session: 2026-02-05T19:24:54Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
 
 ---
