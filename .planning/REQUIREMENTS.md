@@ -33,10 +33,10 @@ Requirements for this modernization milestone. Each maps to roadmap phases.
 
 ### Architecture
 
-- [ ] **ARCH-01**: MovementSystem extracted from entity classes
-- [ ] **ARCH-02**: Movement logic in Peon decoupled from behavior logic
-- [ ] **ARCH-03**: Movement logic in Monster decoupled from behavior logic
-- [ ] **ARCH-04**: Jobs request movement via MovementSystem instead of direct position updates
+- [x] **ARCH-01**: MovementSystem extracted from entity classes
+- [x] **ARCH-02**: Movement logic in Peon decoupled from behavior logic
+- [x] **ARCH-03**: Movement logic in Monster decoupled from behavior logic
+- [x] **ARCH-04**: Jobs request movement via MovementSystem instead of direct position updates
 - [ ] **ARCH-05**: NavigationGrid interface created for world queries
 - [ ] **ARCH-06**: Island implements NavigationGrid for collision/walkability queries
 
@@ -91,10 +91,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PTRN-03 | Phase 2 | Complete |
 | PTRN-04 | Phase 2 | Complete |
 | PTRN-05 | Phase 2 | Complete |
-| ARCH-01 | Phase 3 | Pending |
-| ARCH-02 | Phase 3 | Pending |
-| ARCH-03 | Phase 3 | Pending |
-| ARCH-04 | Phase 3 | Pending |
+| ARCH-01 | Phase 3 | Complete |
+| ARCH-02 | Phase 3 | Complete |
+| ARCH-03 | Phase 3 | Complete |
+| ARCH-04 | Phase 3 | Complete |
 | LANG-03 | Phase 4 | Pending |
 | LANG-04 | Phase 4 | Pending |
 | ARCH-05 | Phase 4 | Pending |
@@ -107,4 +107,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 - Phase 2 complete (13 requirements satisfied)*
+*Last updated: 2026-02-05 - Phase 3 complete (17 requirements satisfied)*

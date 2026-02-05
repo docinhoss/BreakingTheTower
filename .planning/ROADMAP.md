@@ -12,7 +12,7 @@ This roadmap transforms Breaking the Tower from Java 1.6 to Java 21 through incr
 
 - [x] **Phase 1: Foundation & Language Modernization** - Golden master testing + Java 21 syntax adoption
 - [x] **Phase 2: Decoupling Systems** - EventBus, State pattern, Service Locator
-- [ ] **Phase 3: Movement Extraction** - Separate movement from behavior (pathfinding integration point)
+- [x] **Phase 3: Movement Extraction** - Separate movement from behavior (pathfinding integration point)
 - [ ] **Phase 4: Navigation & Sealed Hierarchies** - NavigationGrid + sealed classes for type safety
 
 ## Phase Details
@@ -63,9 +63,9 @@ Plans:
 **Plans**: 3 plans in 3 waves
 
 Plans:
-- [ ] 03-01-PLAN.md — MovementSystem infrastructure (Wave 1)
-- [ ] 03-02-PLAN.md — Peon movement extraction (Wave 2)
-- [ ] 03-03-PLAN.md — Monster movement extraction (Wave 3)
+- [x] 03-01-PLAN.md — MovementSystem infrastructure (Wave 1)
+- [x] 03-02-PLAN.md — Peon movement extraction (Wave 2)
+- [x] 03-03-PLAN.md — Monster movement extraction (Wave 3)
 
 ### Phase 4: Navigation & Sealed Hierarchies
 **Goal**: Complete architecture with queryable world representation and type-safe entity hierarchies
@@ -92,7 +92,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Foundation & Language Modernization | 3/3 | ✓ Complete | 2026-02-05 |
 | 2. Decoupling Systems | 2/2 | ✓ Complete | 2026-02-05 |
-| 3. Movement Extraction | 0/3 | Not started | - |
+| 3. Movement Extraction | 3/3 | ✓ Complete | 2026-02-05 |
 | 4. Navigation & Sealed Hierarchies | 0/2 | Not started | - |
 
 ---
