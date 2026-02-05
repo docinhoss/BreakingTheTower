@@ -1,7 +1,7 @@
 package com.mojang.tower.movement;
 
 import com.mojang.tower.Entity;
-import com.mojang.tower.Island;
+import com.mojang.tower.navigation.NavigationGrid;
 
 /**
  * Central service for entity movement execution.
@@ -9,14 +9,14 @@ import com.mojang.tower.Island;
  * Entities calculate their movement intent; this system executes it.
  */
 public final class MovementSystem {
-    private Island island;
+    private NavigationGrid grid;
 
     /**
-     * Set the Island reference for collision detection.
+     * Set the NavigationGrid reference for collision detection.
      * Must be called before any move() calls.
      */
-    public void setIsland(Island island) {
-        this.island = island;
+    public void setNavigationGrid(NavigationGrid grid) {
+        this.grid = grid;
     }
 
     /**
@@ -36,20 +36,20 @@ public final class MovementSystem {
         double targetX = request.targetX();
         double targetY = request.targetY();
 
-        // During Island construction, island reference not yet set.
+        // During Island construction, grid reference not yet set.
         // Allow movement without collision check (entities placed at free positions).
-        if (island == null) {
+        if (grid == null) {
             entity.x = targetX;
             entity.y = targetY;
             return new MovementResult.Moved(targetX, targetY);
         }
 
-        if (island.isFree(targetX, targetY, entity.r, entity)) {
+        if (grid.isFree(targetX, targetY, entity.r, entity)) {
             entity.x = targetX;
             entity.y = targetY;
             return new MovementResult.Moved(targetX, targetY);
         } else {
-            Entity blocker = island.getEntityAt(targetX, targetY, entity.r, null, entity);
+            Entity blocker = grid.getEntityAt(targetX, targetY, entity.r, null, entity);
             return new MovementResult.Blocked(blocker);
         }
     }

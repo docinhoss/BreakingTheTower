@@ -69,7 +69,7 @@ public class GameRunner {
         Island island = new Island(tower, createDummyImage());
 
         // Now inject Island reference into MovementSystem
-        movementSystem.setIsland(island);
+        movementSystem.setNavigationGrid(island);
 
         // Subscribe to EffectEvent to handle Puff/InfoPuff creation via events
         EventBus.subscribe(EffectEvent.class, event -> {
