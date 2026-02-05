@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 5 of 7 (Core A* and Integration)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-02-05 — Roadmap created for v2 milestone
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-05 — Completed 05-01-PLAN.md
 
-Progress: [####------] 36% (v1 complete, v2 starting)
+Progress: [#####-----] 50% (v1 complete + plan 05-01)
 
 ## v1 Milestone Complete
 
@@ -48,21 +48,23 @@ Recent decisions affecting v2:
 - Synchronous EventBus (determinism requires immediate processing)
 - MovementSystem as single source of truth (pathfinding integration point)
 - NavigationGrid interface (dependency inversion for pathfinding queries)
+- Integer A* costs (10/14) for determinism
+- LinkedHashMap for deterministic closed set iteration
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-None yet.
+None.
 
 ## Session Continuity
 
-Last session: 2026-02-05T22:00:00Z
-Stopped at: v2 roadmap created
+Last session: 2026-02-05T22:53:44Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
 
 ---
 *State initialized: 2026-02-05*
-*Last updated: 2026-02-05 — v2 roadmap created*
+*Last updated: 2026-02-05 — Completed 05-01-PLAN.md*
