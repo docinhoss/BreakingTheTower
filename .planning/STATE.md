@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 5 of 7 (Core A* and Integration)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-05 — Completed 05-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-05 — Completed 05-02-PLAN.md
 
-Progress: [#####-----] 50% (v1 complete + plan 05-01)
+Progress: [######----] 60% (v1 complete + phase 05)
 
 ## v1 Milestone Complete
 
@@ -50,6 +50,8 @@ Recent decisions affecting v2:
 - NavigationGrid interface (dependency inversion for pathfinding queries)
 - Integer A* costs (10/14) for determinism
 - LinkedHashMap for deterministic closed set iteration
+- PathfindingService as public facade, AStarPathfinder internal
+- Path invalidation threshold of 4 world units (1 grid cell)
 
 ### Pending Todos
 
@@ -61,10 +63,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-05T22:53:44Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-02-05T23:01:32Z
+Stopped at: Completed 05-02-PLAN.md (Phase 5 complete)
 Resume file: None
 
 ---
 *State initialized: 2026-02-05*
-*Last updated: 2026-02-05 — Completed 05-01-PLAN.md*
+*Last updated: 2026-02-05 — Completed 05-02-PLAN.md*
