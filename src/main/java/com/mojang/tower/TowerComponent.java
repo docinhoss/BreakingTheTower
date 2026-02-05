@@ -112,12 +112,14 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
         EventBus.subscribe(SoundEvent.class, this::handleSoundEvent);
         EventBus.subscribe(EffectEvent.class, this::handleEffectEvent);
 
+        // Initialize MovementSystem BEFORE Island (Island creation triggers entity ticks)
+        var movementSystem = new MovementSystem();
+        ServiceLocator.provide(movementSystem);
+
         island = new Island(this, bitmaps.island);
 
-        // Initialize MovementSystem (after Island creation)
-        var movementSystem = new MovementSystem();
+        // Now that Island exists, inject it into MovementSystem
         movementSystem.setIsland(island);
-        ServiceLocator.provide(movementSystem);
     }
 
     private void handleSoundEvent(SoundEvent event)

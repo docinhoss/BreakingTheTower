@@ -7,6 +7,9 @@ import com.mojang.tower.event.EventBus;
 import com.mojang.tower.event.DeathSound;
 import com.mojang.tower.event.DingSound;
 import com.mojang.tower.event.InfoPuffEffect;
+import com.mojang.tower.movement.MovementRequest;
+import com.mojang.tower.movement.MovementResult;
+import com.mojang.tower.service.ServiceLocator;
 
 public class Peon extends Entity
 {
@@ -134,30 +137,26 @@ public class Peon extends Entity
         
         speed+=level*0.1;
 
-        double xt = x + Math.cos(rot) * 0.4 * speed;
-        double yt = y + Math.sin(rot) * 0.4 * speed;
-        if (island.isFree(xt, yt, r, this))
-        {
-            x = xt;
-            y = yt;
-        }
-        else
-        {
-            if (job != null)
-            {
-                Entity collided = island.getEntityAt(xt, yt, r, null, this);
-                if (collided != null)
-                {
-                    job.collide(collided);
-                }
-                else
-                {
-                    job.cantReach();
-                }
+        double targetX = x + Math.cos(rot) * 0.4 * speed;
+        double targetY = y + Math.sin(rot) * 0.4 * speed;
+        MovementResult result = ServiceLocator.movement().move(
+            new MovementRequest(this, targetX, targetY)
+        );
+        switch (result) {
+            case MovementResult.Moved(var newX, var newY) -> {
+                // Position already updated by MovementSystem
             }
-//            rot += random.nextInt(2) * 2 - 1 * Math.PI / 2 + (random.nextDouble() - 0.5);
-            rot = (random.nextDouble())*Math.PI*2;
-            wanderTime = random.nextInt(30)+3;
+            case MovementResult.Blocked(var blocker) -> {
+                if (job != null) {
+                    if (blocker != null) {
+                        job.collide(blocker);
+                    } else {
+                        job.cantReach();
+                    }
+                }
+                rot = random.nextDouble() * Math.PI * 2;
+                wanderTime = random.nextInt(30) + 3;
+            }
         }
 
         moveTick += speed;

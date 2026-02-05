@@ -7,6 +7,8 @@ import java.util.Collections;
 import java.util.List;
 
 import com.mojang.tower.event.*;
+import com.mojang.tower.movement.MovementSystem;
+import com.mojang.tower.service.ServiceLocator;
 
 /**
  * Headless game runner for deterministic golden master testing.
@@ -49,17 +51,25 @@ public class GameRunner {
         // Reset seed counter for reproducibility
         entitySeedCounter = 0;
 
-        // Reset EventBus to clear any state from previous test runs
+        // Reset EventBus and ServiceLocator to clear any state from previous test runs
         EventBus.reset();
+        ServiceLocator.reset();
 
         // Enable deterministic mode for Entity and Job random generation
         // This MUST be set BEFORE creating Island (which creates entities)
         Entity.setTestSeed(FIXED_SEED);
         Job.setTestSeed(FIXED_SEED + 1000000); // Offset to avoid collision
 
+        // Initialize MovementSystem BEFORE Island (Island creation triggers entity ticks)
+        var movementSystem = new MovementSystem();
+        ServiceLocator.provide(movementSystem);
+
         // Create minimal components for headless operation
         HeadlessTowerComponent tower = new HeadlessTowerComponent();
         Island island = new Island(tower, createDummyImage());
+
+        // Now inject Island reference into MovementSystem
+        movementSystem.setIsland(island);
 
         // Subscribe to EffectEvent to handle Puff/InfoPuff creation via events
         EventBus.subscribe(EffectEvent.class, event -> {
