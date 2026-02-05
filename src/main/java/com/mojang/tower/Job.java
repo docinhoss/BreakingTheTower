@@ -5,7 +5,8 @@ import java.util.Random;
 import com.mojang.tower.event.EventBus;
 import com.mojang.tower.event.SpawnWarriorSound;
 
-public class Job
+public sealed class Job
+    permits Job.Goto, Job.GotoAndConvert, Job.Hunt, Job.Build, Job.Plant, Job.Gather
 {
     /**
      * Test support: when non-null, new jobs use this as base seed.
@@ -32,7 +33,7 @@ public class Job
         return new Random();
     }
 
-    public static class Goto extends Job
+    public static final class Goto extends Job
     {
         private Entity target;
 
@@ -53,7 +54,7 @@ public class Job
         }
     }
     
-    public static class GotoAndConvert extends Job
+    public static final class GotoAndConvert extends Job
     {
         private Entity target;
 
@@ -81,7 +82,7 @@ public class Job
         }
     }
     
-    public static class Hunt extends Job
+    public static final class Hunt extends Job
     {
         private Monster target;
 
@@ -103,7 +104,7 @@ public class Job
     }    
 
 
-    public static class Build extends Job
+    public static final class Build extends Job
     {
         private House target;
 
@@ -123,7 +124,7 @@ public class Job
         }
     }
 
-    public static class Plant extends Job
+    public static final class Plant extends Job
     {
         private Entity target;
         private boolean hasSeed = false;
@@ -186,7 +187,7 @@ public class Job
         }
     }
 
-    public static class Gather extends Job
+    public static final class Gather extends Job
     {
         boolean hasResource = false;
         public int resourceId = 0;
