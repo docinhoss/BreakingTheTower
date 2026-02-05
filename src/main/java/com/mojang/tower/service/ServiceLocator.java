@@ -1,6 +1,7 @@
 package com.mojang.tower.service;
 
 import com.mojang.tower.movement.MovementSystem;
+import com.mojang.tower.pathfinding.PathfindingService;
 
 /**
  * Central registry for game services.
@@ -11,6 +12,7 @@ import com.mojang.tower.movement.MovementSystem;
 public final class ServiceLocator {
     private static AudioService audioService;
     private static MovementSystem movementSystem;
+    private static PathfindingService pathfindingService;
 
     private ServiceLocator() {
         // Static utility class
@@ -61,6 +63,28 @@ public final class ServiceLocator {
     }
 
     /**
+     * Register a PathfindingService implementation.
+     *
+     * @param service the service to register
+     */
+    public static void provide(PathfindingService service) {
+        pathfindingService = service;
+    }
+
+    /**
+     * Get the registered PathfindingService.
+     *
+     * @return the pathfinding service
+     * @throws IllegalStateException if no service has been registered
+     */
+    public static PathfindingService pathfinding() {
+        if (pathfindingService == null) {
+            throw new IllegalStateException("PathfindingService not initialized.");
+        }
+        return pathfindingService;
+    }
+
+    /**
      * Initialize default service implementations.
      * Call this at application startup.
      */
@@ -75,5 +99,6 @@ public final class ServiceLocator {
     public static void reset() {
         audioService = null;
         movementSystem = null;
+        pathfindingService = null;
     }
 }

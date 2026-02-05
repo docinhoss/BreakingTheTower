@@ -9,6 +9,7 @@ import java.util.Collections;
 
 import com.mojang.tower.event.*;
 import com.mojang.tower.movement.MovementSystem;
+import com.mojang.tower.pathfinding.PathfindingService;
 import com.mojang.tower.service.ServiceLocator;
 import com.mojang.tower.state.*;
 
@@ -120,6 +121,10 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
 
         // Now that Island exists, inject it into MovementSystem
         movementSystem.setNavigationGrid(island);
+
+        // Initialize PathfindingService with Island as NavigationGrid
+        PathfindingService pathfindingService = new PathfindingService(island);
+        ServiceLocator.provide(pathfindingService);
     }
 
     private void handleSoundEvent(SoundEvent event)
