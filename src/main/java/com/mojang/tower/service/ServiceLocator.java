@@ -1,0 +1,53 @@
+package com.mojang.tower.service;
+
+/**
+ * Central registry for game services.
+ *
+ * Services are registered at startup and can be accessed statically.
+ * For testing, services can be swapped via provide() and reset via reset().
+ */
+public final class ServiceLocator {
+    private static AudioService audioService;
+
+    private ServiceLocator() {
+        // Static utility class
+    }
+
+    /**
+     * Register an AudioService implementation.
+     *
+     * @param service the service to register
+     */
+    public static void provide(AudioService service) {
+        audioService = service;
+    }
+
+    /**
+     * Get the registered AudioService.
+     *
+     * @return the audio service
+     * @throws IllegalStateException if no service has been registered
+     */
+    public static AudioService audio() {
+        if (audioService == null) {
+            throw new IllegalStateException("AudioService not initialized. Call ServiceLocator.initializeDefaults() first.");
+        }
+        return audioService;
+    }
+
+    /**
+     * Initialize default service implementations.
+     * Call this at application startup.
+     */
+    public static void initializeDefaults() {
+        provide(new SoundsAdapter());
+    }
+
+    /**
+     * Clear all registered services.
+     * Primarily for testing to ensure clean state between tests.
+     */
+    public static void reset() {
+        audioService = null;
+    }
+}
