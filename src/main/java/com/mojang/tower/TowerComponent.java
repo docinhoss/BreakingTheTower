@@ -9,6 +9,7 @@ import java.util.Collections;
 
 import com.mojang.tower.event.*;
 import com.mojang.tower.service.ServiceLocator;
+import com.mojang.tower.state.*;
 
 public class TowerComponent extends Canvas implements Runnable, MouseListener, MouseMotionListener, KeyListener
 {
@@ -36,8 +37,8 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
     private int xCenter;
     private int yCenter;
     private int selectedHouseType = 0;
-    private boolean titleScreen = true, won = false;
-    private int gameTime = 0, winScore = 0, wonTime;
+    private GameState currentState = new TitleState();
+    private int gameTime = 0, winScore = 0;
 
     public TowerComponent(int width, int height)
     {
@@ -171,15 +172,15 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
 
     private void tick()
     {
-        if (won) wonTime++;
+        // State-driven rotation
+        xRotA += currentState.getRotationDelta();
+
+        // Existing rotation damping
         xRot += xRotA;
         xRotA *= 0.7;
 
-        if (titleScreen || won)
-        {
-            xRotA -= 0.002;
-        }
-        else
+        // Mouse scroll rotation (only in playing state)
+        if (currentState instanceof PlayingState)
         {
             if (scrolling)
             {
@@ -188,7 +189,7 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
             }
             else
             {
-                if (xMouse >= 0 && yMouse<height*2-20*2 && yMouse>80)
+                if (xMouse >= 0 && yMouse < height * 2 - 20 * 2 && yMouse > 80)
                 {
                     if (xMouse < 80) xRotA += 0.02;
                     if (xMouse > width * 2 - 80) xRotA -= 0.02;
@@ -205,11 +206,31 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
             frames = 0;
         }
 
-        if (!titleScreen && !won)
+        // State-driven game time
+        if (currentState.shouldIncrementGameTime())
         {
             gameTime++;
         }
-        if (!titleScreen) island.tick();
+
+        // State-driven island tick
+        if (currentState.shouldTickIsland())
+        {
+            island.tick();
+        }
+
+        // State tick (may return new state)
+        GameState nextState = currentState.tick();
+        transitionTo(nextState);
+    }
+
+    private void transitionTo(GameState nextState)
+    {
+        if (nextState != currentState)
+        {
+            currentState.onExit();
+            currentState = nextState;
+            currentState.onEnter();
+        }
     }
 
     private void render(double alpha)
@@ -262,7 +283,7 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
         g.setColor(new Color(0x4379B7));
         g.fillRect(0, 0, width, height);
 
-        if (!titleScreen && !won)
+        if (currentState instanceof PlayingState)
         {
             g.setColor(new Color(0x87ADFF));
             g.fillRect(0, 0, width, 40);
@@ -294,7 +315,7 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
         for (int i = 0; i < island.entities.size(); i++)
             island.entities.get(i).render(g, alpha);
 
-        if (!titleScreen && !won)
+        if (currentState instanceof PlayingState)
         {
             if (selectedHouseType >= 0)
             {
@@ -324,101 +345,104 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
         g.setTransform(af);
         g.setFont(new Font("Sans-Serif", Font.PLAIN, 10));
 
-        if (titleScreen)
+        switch (currentState)
         {
-            g.drawImage(bitmaps.logo, (width - bitmaps.logo.getWidth()) / 2, 16, null);
-
-            FontMetrics fm = g.getFontMetrics();
-            g.setColor(new Color(0x000000));
-            for (int i = 0; i < 2; i++)
+            case TitleState titleState ->
             {
-                if ((tickCount / 10 % 2) == 0)
-                {
-                    String str = "Click to start the game";
-                    g.drawString(str, (width - fm.stringWidth(str)) / 2 - i, height - 16 - i);
-                }
+                g.drawImage(bitmaps.logo, (width - bitmaps.logo.getWidth()) / 2, 16, null);
 
-                g.setColor(new Color(0xffffff));
+                FontMetrics fm = g.getFontMetrics();
+                g.setColor(new Color(0x000000));
+                for (int i = 0; i < 2; i++)
+                {
+                    if ((tickCount / 10 % 2) == 0)
+                    {
+                        String str = "Click to start the game";
+                        g.drawString(str, (width - fm.stringWidth(str)) / 2 - i, height - 16 - i);
+                    }
+
+                    g.setColor(new Color(0xffffff));
+                }
             }
-        }
-        else if (won)
-        {
-            g.drawImage(bitmaps.wonScreen, (width - bitmaps.logo.getWidth()) / 2, 16, null);
-            FontMetrics fm = g.getFontMetrics();
-            g.setColor(new Color(0x000000));
-            for (int i = 0; i < 2; i++)
+            case WonState wonState ->
             {
-
-                if (i == 1) g.setColor(new Color(0xffff00));
-                String str = "Time: " + timeStr + ", Score: " + winScore;
-                g.drawString(str, (width - fm.stringWidth(str)) / 2 - i, height * 45 / 100 - i);
-
-                if (i == 1) g.setColor(new Color(0xffffff));
-                if (wonTime >= TICKS_PER_SECOND * 3 && (tickCount / 10 % 2) == 0)
+                g.drawImage(bitmaps.wonScreen, (width - bitmaps.logo.getWidth()) / 2, 16, null);
+                FontMetrics fm = g.getFontMetrics();
+                g.setColor(new Color(0x000000));
+                for (int i = 0; i < 2; i++)
                 {
-                    str = "Click to continue playing";
-                    g.drawString(str, (width - fm.stringWidth(str)) / 2 - i, height - 16 - i);
-                }
 
+                    if (i == 1) g.setColor(new Color(0xffff00));
+                    String str = "Time: " + timeStr + ", Score: " + winScore;
+                    g.drawString(str, (width - fm.stringWidth(str)) / 2 - i, height * 45 / 100 - i);
+
+                    if (i == 1) g.setColor(new Color(0xffffff));
+                    if (wonState.getWonTime() >= TICKS_PER_SECOND * 3 && (tickCount / 10 % 2) == 0)
+                    {
+                        str = "Click to continue playing";
+                        g.drawString(str, (width - fm.stringWidth(str)) / 2 - i, height - 16 - i);
+                    }
+
+                }
             }
-        }
-        else
-        {
-            for (int i = -1; i < HouseType.houseTypes.length; i++)
+            case PlayingState playingState ->
             {
-                int x = i * 20 + (width - (HouseType.houseTypes.length + 1) * 20) / 2;
-                int y = 4;
-                if (i == -1)
+                for (int i = -1; i < HouseType.houseTypes.length; i++)
                 {
-                    g.drawImage(bitmaps.delete, x, y, null);
+                    int x = i * 20 + (width - (HouseType.houseTypes.length + 1) * 20) / 2;
+                    int y = 4;
+                    if (i == -1)
+                    {
+                        g.drawImage(bitmaps.delete, x, y, null);
+                    }
+                    else
+                    {
+                        g.drawImage(HouseType.houseTypes[i].getImage(bitmaps), x, y, null);
+                    }
+                    if (i == selectedHouseType)
+                    {
+                        g.setColor(Color.WHITE);
+                        g.drawRect(x - 2, y - 2, 19, 19);
+                    }
                 }
-                else
+
+                FontMetrics fm = g.getFontMetrics();
+                g.setColor(new Color(0x477D8F));
+                for (int i = 0; i < 2; i++)
                 {
-                    g.drawImage(HouseType.houseTypes[i].getImage(bitmaps), x, y, null);
-                }
-                if (i == selectedHouseType)
-                {
+                    int x = selectedHouseType * 20 + (width - (HouseType.houseTypes.length + 1) * 20) / 2;
+                    int y = 4 + 28;
+
+                    if (selectedHouseType >= 0)
+                    {
+                        HouseType ht = HouseType.houseTypes[selectedHouseType];
+
+                        String s = ht.getString();
+                        g.drawString(s, x + 8 - fm.stringWidth(s) / 2 - i, y - i);
+                        s = ht.getDescription();
+                        g.drawString(s, x + 8 - fm.stringWidth(s) / 2 - i, y - i + 11);
+                    }
+                    else
+                    {
+                        String s = "Sell building";
+                        g.drawString(s, x + 8 - fm.stringWidth(s) / 2 - i, y - i);
+                        s = "Returns 75% of wood and rock used";
+                        g.drawString(s, x + 8 - fm.stringWidth(s) / 2 - i, y - i + 11);
+                    }
+
+                    String tmp = "Wood: 9999";
+                    g.drawString("Wood: " + island.resources.wood, width - 4 - i - fm.stringWidth(tmp), 12 - i + 11 * 0);
+                    g.drawString("Rock: " + island.resources.rock, width - 4 - i - fm.stringWidth(tmp), 12 - i + 11 * 1);
+                    g.drawString("Food: " + island.resources.food, width - 4 - i - fm.stringWidth(tmp), 12 - i + 11 * 2);
+
+                    String pop = "Population: " + island.population + " / " + island.populationCap;
+                    g.drawString(pop, 4 - i, 12 - i + 11 * 1);
+                    pop = "Warriors: " + island.warriorPopulation + " / " + island.warriorPopulationCap;
+                    g.drawString(pop, 4 - i, 12 - i + 11 * 2);
+
+                    g.drawString("Time: " + timeStr, 4 - i, 12 - i + 11 * 0);
                     g.setColor(Color.WHITE);
-                    g.drawRect(x - 2, y - 2, 19, 19);
                 }
-            }
-
-            FontMetrics fm = g.getFontMetrics();
-            g.setColor(new Color(0x477D8F));
-            for (int i = 0; i < 2; i++)
-            {
-                int x = selectedHouseType * 20 + (width - (HouseType.houseTypes.length + 1) * 20) / 2;
-                int y = 4 + 28;
-
-                if (selectedHouseType >= 0)
-                {
-                    HouseType ht = HouseType.houseTypes[selectedHouseType];
-
-                    String s = ht.getString();
-                    g.drawString(s, x + 8 - fm.stringWidth(s) / 2 - i, y - i);
-                    s = ht.getDescription();
-                    g.drawString(s, x + 8 - fm.stringWidth(s) / 2 - i, y - i + 11);
-                }
-                else
-                {
-                    String s = "Sell building";
-                    g.drawString(s, x + 8 - fm.stringWidth(s) / 2 - i, y - i);
-                    s = "Returns 75% of wood and rock used";
-                    g.drawString(s, x + 8 - fm.stringWidth(s) / 2 - i, y - i + 11);
-                }
-
-                String tmp = "Wood: 9999";
-                g.drawString("Wood: " + island.resources.wood, width - 4 - i - fm.stringWidth(tmp), 12 - i + 11 * 0);
-                g.drawString("Rock: " + island.resources.rock, width - 4 - i - fm.stringWidth(tmp), 12 - i + 11 * 1);
-                g.drawString("Food: " + island.resources.food, width - 4 - i - fm.stringWidth(tmp), 12 - i + 11 * 2);
-
-                String pop = "Population: " + island.population + " / " + island.populationCap;
-                g.drawString(pop, 4 - i, 12 - i + 11 * 1);
-                pop = "Warriors: " + island.warriorPopulation + " / " + island.warriorPopulationCap;
-                g.drawString(pop, 4 - i, 12 - i + 11 * 2);
-
-                g.drawString("Time: " + timeStr, 4 - i, 12 - i + 11 * 0);
-                g.setColor(Color.WHITE);
             }
         }
         
@@ -448,19 +472,14 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
                 return;
             }
             
-            if (titleScreen)
+            // State-driven click handling
+            GameState nextState = currentState.handleClick(me.getX(), me.getY(), width, height);
+            transitionTo(nextState);
+            if (!(currentState instanceof PlayingState))
             {
-                titleScreen = false;
-                return;
+                return; // Don't process building clicks in non-playing states
             }
-            if (won)
-            {
-                if (wonTime >= TICKS_PER_SECOND * 3)
-                {
-                    won = false;
-                }
-                return;
-            }
+
             if (me.getButton() == 1)
             {
                 int xm = me.getX() / 2;
@@ -590,7 +609,7 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
 
     public void win()
     {
-        won = true;
         winScore = 100000 * (TowerComponent.TICKS_PER_SECOND * 60 * 30) / (gameTime);
+        transitionTo(new WonState());
     }
 }
