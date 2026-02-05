@@ -5,7 +5,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Headless game runner for deterministic golden master testing.
@@ -48,12 +47,16 @@ public class GameRunner {
         // Reset seed counter for reproducibility
         entitySeedCounter = 0;
 
+        // Enable deterministic mode for Entity and Job random generation
+        // This MUST be set BEFORE creating Island (which creates entities)
+        Entity.setTestSeed(FIXED_SEED);
+        Job.setTestSeed(FIXED_SEED + 1000000); // Offset to avoid collision
+
         // Create minimal components for headless operation
         HeadlessTowerComponent tower = new HeadlessTowerComponent();
         Island island = new Island(tower, createDummyImage());
 
-        // Seed all entity Randoms for determinism
-        seedAllEntityRandoms(island);
+        // No longer need reflection-based seeding - entities are seeded at construction
 
         List<GameState> states = new ArrayList<>();
         boolean won = false;
@@ -68,15 +71,16 @@ public class GameRunner {
 
             // Check win condition (tower destroyed)
             won = tower.hasWon();
-
-            // Seed any newly added entities
-            seedAllEntityRandoms(island);
         }
 
         // Capture final state
         if (won) {
             states.add(captureState(states.size(), island, false, true));
         }
+
+        // Clean up - disable test seed mode
+        Entity.setTestSeed(null);
+        Job.setTestSeed(null);
 
         return states;
     }
@@ -111,55 +115,6 @@ public class GameRunner {
 
         image.setRGB(0, 0, 256, 256, pixels, 0, 256);
         return image;
-    }
-
-    /**
-     * Seeds all entity Random fields for deterministic behavior.
-     * Uses reflection to access protected Random fields.
-     */
-    private static void seedAllEntityRandoms(Island island) {
-        for (Entity entity : island.entities) {
-            seedEntityRandom(entity);
-
-            // Seed Job's Random if entity is a Peon with a job
-            if (entity instanceof Peon peon) {
-                Job job = getJob(peon);
-                if (job != null) {
-                    seedJobRandom(job);
-                }
-            }
-        }
-    }
-
-    /**
-     * Seeds an entity's Random field using reflection.
-     */
-    private static void seedEntityRandom(Entity entity) {
-        try {
-            Field randomField = Entity.class.getDeclaredField("random");
-            randomField.setAccessible(true);
-            Random random = (Random) randomField.get(entity);
-
-            // Use a deterministic seed based on entity creation order
-            // The counter ensures each entity gets a unique but reproducible seed
-            random.setSeed(FIXED_SEED + entitySeedCounter++);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Failed to seed entity Random", e);
-        }
-    }
-
-    /**
-     * Seeds a job's Random field using reflection.
-     */
-    private static void seedJobRandom(Job job) {
-        try {
-            Field randomField = Job.class.getDeclaredField("random");
-            randomField.setAccessible(true);
-            Random random = (Random) randomField.get(job);
-            random.setSeed(FIXED_SEED + entitySeedCounter++);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Failed to seed job Random", e);
-        }
     }
 
     /**

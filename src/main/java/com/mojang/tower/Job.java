@@ -4,7 +4,30 @@ import java.util.Random;
 
 public class Job
 {
-    protected Random random = new Random();
+    /**
+     * Test support: when non-null, new jobs use this as base seed.
+     * Each job increments the counter for unique but deterministic seeds.
+     * Package-private for test access.
+     */
+    static Long testSeedBase = null;
+    private static int testSeedCounter = 0;
+
+    /**
+     * Resets the test seed mechanism. Call before each test run.
+     */
+    static void setTestSeed(Long seed) {
+        testSeedBase = seed;
+        testSeedCounter = 0;
+    }
+
+    protected Random random = createRandom();
+
+    private static Random createRandom() {
+        if (testSeedBase != null) {
+            return new Random(testSeedBase + testSeedCounter++);
+        }
+        return new Random();
+    }
 
     public static class Goto extends Job
     {
@@ -288,7 +311,7 @@ public class Job
 
     public void cantReach()
     {
-        if (Math.random() < 0.1)
+        if (random.nextDouble() < 0.1)
         {
             target = null;
         }
