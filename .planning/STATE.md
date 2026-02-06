@@ -2,65 +2,61 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-05)
+See: .planning/PROJECT.md (updated 2026-02-06)
 
-**Core value:** A clean, extensible architecture that makes adding pathfinding straightforward
-**Current focus:** v2 Pathfinding — Phase 7: Dynamic Recalculation
+**Core value:** A clean, extensible architecture that makes adding new systems straightforward
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 6 of 7 (Unreachable Handling)
-Plan: 2 of 2 in current phase
-Status: Phase complete, verified
-Last activity: 2026-02-06 — Verified 06-VERIFICATION.md (passed 5/5)
+Phase: 6 of 6 complete (v2 milestone shipped)
+Plan: N/A
+Status: Milestone complete
+Last activity: 2026-02-06 — v2 Pathfinding milestone shipped
 
-Progress: [########--] 80% (v1 complete + phases 05-06)
+Progress: [##########] 100% (v1 + v2 complete)
 
-## v1 Milestone Complete
+## Milestones Shipped
 
-**Shipped:** 2026-02-05
-**Phases:** 4 phases (11 plans)
+### v2 Pathfinding (Shipped: 2026-02-06)
+
+**Phases:** 5-6 (4 plans)
+**Requirements:** 10/13 satisfied
+**Archive:** .planning/milestones/v2-ROADMAP.md
+
+### v1 Modernization (Shipped: 2026-02-05)
+
+**Phases:** 1-4 (11 plans)
 **Requirements:** 19/19 satisfied
-**Report:** .planning/MILESTONES.md
+**Archive:** .planning/milestones/v1-ROADMAP.md
 
-## Performance Metrics (v1)
+## Performance Metrics
 
-**Velocity:**
-- Total plans completed: 11
-- Average duration: 3.8 min
-- Total execution time: 42 min
+**v2 Velocity:**
+- Total plans completed: 4
+- Average duration: 3 min
+- Total execution time: 12 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-Foundation | 3 | 15 min | 5 min |
-| 02-Decoupling | 2 | 13 min | 6.5 min |
-| 03-Movement | 3 | 7 min | 2.3 min |
-| 04-Navigation | 3 | 7 min | 2.3 min |
+| 05-Core A* | 2 | 6 min | 3 min |
+| 06-Unreachable | 2 | 6 min | 3 min |
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions logged in PROJECT.md Key Decisions table.
-Recent decisions affecting v2:
-- Synchronous EventBus (determinism requires immediate processing)
-- MovementSystem as single source of truth (pathfinding integration point)
-- NavigationGrid interface (dependency inversion for pathfinding queries)
-- Integer A* costs (10/14) for determinism
-- LinkedHashMap for deterministic closed set iteration
-- PathfindingService as public facade, AStarPathfinder internal
-- Path invalidation threshold of 4 world units (1 grid cell)
-- Node limit default 1024 (configurable via PathfindingService)
-- AbandonedTargetSound returns null sound (no asset yet)
-- LinkedHashMap for blacklist ensures deterministic iteration order
-- isTrapped() checks 8 neighbors via isOnGround() for walkability
-- Job.cantReach() now deterministic (just clears target, no random 10%)
 
 ### Pending Todos
 
 None.
+
+### Future Work
+
+- Phase 7: Dynamic Recalculation (DYN-01, DYN-02, DYN-03) — deferred
 
 ### Blockers/Concerns
 
@@ -68,10 +64,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06T10:55:00Z
-Stopped at: Phase 6 verified, ready for Phase 7
+Last session: 2026-02-06
+Stopped at: v2 milestone complete
 Resume file: None
 
 ---
 *State initialized: 2026-02-05*
-*Last updated: 2026-02-06 — Phase 6 verified (5/5 must-haves)*
+*Last updated: 2026-02-06 — v2 milestone shipped*

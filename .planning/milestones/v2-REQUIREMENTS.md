@@ -1,7 +1,12 @@
-# Requirements: Breaking the Tower v2 Pathfinding
+# Requirements Archive: v2 Pathfinding
 
-**Defined:** 2026-02-05
-**Core Value:** Peons navigate intelligently around obstacles instead of bumping repeatedly
+**Archived:** 2026-02-06
+**Status:** SHIPPED (with Phase 7 deferred)
+
+This is the archived requirements specification for v2 Pathfinding.
+For current requirements, see `.planning/REQUIREMENTS.md` (created for next milestone).
+
+---
 
 ## v2 Requirements
 
@@ -20,7 +25,7 @@ Requirements for pathfinding milestone. Each maps to roadmap phases.
 - [x] **REACH-02**: Peon abandons unreachable targets quickly (not 10% random abandon)
 - [x] **REACH-03**: Pathfinding has node limit to prevent unbounded search
 
-### Dynamic Recalculation
+### Dynamic Recalculation (DEFERRED)
 
 - [ ] **DYN-01**: Peon recalculates path when blocked mid-route
 - [ ] **DYN-02**: Peon reroutes when obstacle appears in path (house built, tree harvested)
@@ -75,15 +80,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REACH-01 | Phase 6 | Complete |
 | REACH-02 | Phase 6 | Complete |
 | REACH-03 | Phase 6 | Complete |
-| DYN-01 | Phase 7 | Pending |
-| DYN-02 | Phase 7 | Pending |
-| DYN-03 | Phase 7 | Pending |
+| DYN-01 | Phase 7 | Deferred |
+| DYN-02 | Phase 7 | Deferred |
+| DYN-03 | Phase 7 | Deferred |
 
 **Coverage:**
 - v2 requirements: 13 total
-- Mapped to phases: 13
-- Unmapped: 0
+- Shipped: 10
+- Deferred: 3
 
 ---
-*Requirements defined: 2026-02-05*
-*Last updated: 2026-02-06 — Phase 6 requirements complete (10/13)*
+
+## Milestone Summary
+
+**Shipped:** 10 of 13 v2 requirements (77%)
+
+**Adjusted:** None — all requirements implemented as specified
+
+**Dropped:** None
+
+**Deferred:** DYN-01, DYN-02, DYN-03 (Phase 7 Dynamic Recalculation)
+- Reason: User elected to skip Phase 7 for now
+- Impact: Collision-based path invalidation works but is reactive rather than proactive
+- Future: Can be addressed in v3 or future milestone
+
+---
+*Archived: 2026-02-06 as part of v2 milestone completion*
