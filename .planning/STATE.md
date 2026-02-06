@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** A clean, extensible architecture that makes adding pathfinding straightforward
-**Current focus:** v2 Pathfinding — Phase 6: Unreachable Handling
+**Current focus:** v2 Pathfinding — Phase 7: Final Validation
 
 ## Current Position
 
 Phase: 6 of 7 (Unreachable Handling)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-06 — Completed 06-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-06 — Completed 06-02-PLAN.md
 
-Progress: [#######---] 70% (v1 complete + phases 05-06.1)
+Progress: [########--] 80% (v1 complete + phases 05-06)
 
 ## v1 Milestone Complete
 
@@ -54,6 +54,9 @@ Recent decisions affecting v2:
 - Path invalidation threshold of 4 world units (1 grid cell)
 - Node limit default 1024 (configurable via PathfindingService)
 - AbandonedTargetSound returns null sound (no asset yet)
+- LinkedHashMap for blacklist ensures deterministic iteration order
+- isTrapped() checks 8 neighbors via isOnGround() for walkability
+- Job.cantReach() now deterministic (just clears target, no random 10%)
 
 ### Pending Todos
 
@@ -65,10 +68,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06T10:46:08Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-02-06T10:53:12Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
 
 ---
 *State initialized: 2026-02-05*
-*Last updated: 2026-02-06 — Completed 06-01-PLAN.md*
+*Last updated: 2026-02-06 — Completed 06-02-PLAN.md*
