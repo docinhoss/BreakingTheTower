@@ -309,6 +309,16 @@ public sealed class Job
         target = e;
     }
 
+    /**
+     * Get the current target entity for this job.
+     * Used by Peon for blacklist management when abandoning unreachable targets.
+     * @return current target entity, or null if no target
+     */
+    public Entity getTarget()
+    {
+        return target;
+    }
+
     public void arrived()
     {
     }
