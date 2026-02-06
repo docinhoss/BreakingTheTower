@@ -2,8 +2,10 @@ package com.mojang.tower;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.util.LinkedHashMap;
 import java.util.List;
 
+import com.mojang.tower.event.AbandonedTargetSound;
 import com.mojang.tower.event.EventBus;
 import com.mojang.tower.event.DeathSound;
 import com.mojang.tower.event.DingSound;
@@ -35,6 +37,11 @@ public final class Peon extends Entity
     private int xp = 0;
     private int nextLevel = 1;
     private int level = 0;
+
+    // Blacklist for failed targets (prevents re-assignment thrashing)
+    private final LinkedHashMap<Entity, Integer> targetBlacklist = new LinkedHashMap<>();
+    private static final int BLACKLIST_DURATION = 60; // ticks
+    private int tickCounter = 0;
 
     public Peon(double x, double y, int type)
     {
@@ -86,8 +93,38 @@ public final class Peon extends Entity
         if (job != null) job.init(island, this);
     }
 
+    /**
+     * Clean expired entries from blacklist.
+     * Called at start of tick() for deterministic cleanup.
+     */
+    private void cleanBlacklist() {
+        targetBlacklist.entrySet().removeIf(e -> e.getValue() <= tickCounter);
+    }
+
+    /**
+     * Add target to blacklist with expiry.
+     * @param target entity to blacklist
+     */
+    private void blacklistTarget(Entity target) {
+        if (target != null) {
+            targetBlacklist.put(target, tickCounter + BLACKLIST_DURATION);
+        }
+    }
+
+    /**
+     * Check if target is blacklisted.
+     * @param target entity to check
+     * @return true if target is currently blacklisted
+     */
+    public boolean isBlacklisted(Entity target) {
+        return target != null && targetBlacklist.containsKey(target);
+    }
+
     public void tick()
     {
+        tickCounter++;
+        cleanBlacklist();
+
         if (job != null)
         {
             job.tick();
