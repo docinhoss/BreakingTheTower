@@ -120,6 +120,38 @@ public final class Peon extends Entity
         return target != null && targetBlacklist.containsKey(target);
     }
 
+    /**
+     * Check if peon is completely surrounded (all 8 neighbors blocked).
+     * Uses grid coordinates to check neighboring cells.
+     * @return true if peon has no walkable neighbors
+     */
+    private boolean isTrapped() {
+        // Convert peon world position to grid cell
+        int gx = (int) ((x + 192) / 4);
+        int gy = (int) ((y + 192) / 4);
+
+        // 8 neighbors: N, NE, E, SE, S, SW, W, NW
+        int[][] neighbors = {
+            {0, -1}, {1, -1}, {1, 0}, {1, 1},
+            {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}
+        };
+
+        for (int[] d : neighbors) {
+            int nx = gx + d[0];
+            int ny = gy + d[1];
+            // Check bounds (96x96 grid)
+            if (nx >= 0 && nx < 96 && ny >= 0 && ny < 96) {
+                // Convert grid to world (center of cell)
+                double worldX = (nx * 4.0) - 192 + 2;
+                double worldY = (ny * 4.0) - 192 + 2;
+                if (island.isOnGround(worldX, worldY)) {
+                    return false; // At least one walkable neighbor
+                }
+            }
+        }
+        return true; // All neighbors blocked = trapped
+    }
+
     public void tick()
     {
         tickCounter++;
@@ -194,8 +226,23 @@ public final class Peon extends Entity
                             pathTargetY = job.yTarget;
                         }
                         case PathResult.NotFound(var reason) -> {
-                            // No path found - will use random movement below
                             currentPath = null;
+
+                            // Check if peon is trapped (all neighbors blocked)
+                            if (isTrapped()) {
+                                die(); // Uses existing death logic, respawn via normal House spawning
+                                return;
+                            }
+
+                            // Target is blocked but peon is not trapped - abandon job
+                            if (job != null) {
+                                Entity target = job.getTarget();
+                                if (target != null) {
+                                    blacklistTarget(target);
+                                }
+                                EventBus.publish(new AbandonedTargetSound());
+                                setJob(null); // Become idle, available for new assignment
+                            }
                         }
                     }
                 }
