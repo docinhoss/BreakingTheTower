@@ -54,10 +54,11 @@ Plans:
   1. Peon surrounded by obstacles gives up immediately (not random 10% abandon)
   2. Peon targeting entity completely walled off abandons within 1 tick
   3. Pathfinding search terminates within node limit (no unbounded exploration)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: TBD
+- [ ] 06-01-PLAN.md - Infrastructure: AbandonedTargetSound event, configurable node limit, Job.getTarget() accessor
+- [ ] 06-02-PLAN.md - Peon behavior: blacklist, trapped detection, immediate abandonment
 
 ### Phase 7: Dynamic Recalculation
 **Goal**: Peons reroute when obstacles appear or disappear mid-journey
@@ -83,9 +84,9 @@ Plans:
 | 3. Movement | v1.0 | 3/3 | Complete | 2026-02-05 |
 | 4. Navigation | v1.0 | 3/3 | Complete | 2026-02-05 |
 | 5. Core A* and Integration | v2 | 2/2 | Complete | 2026-02-05 |
-| 6. Unreachable Handling | v2 | 0/? | Not started | - |
+| 6. Unreachable Handling | v2 | 0/2 | Not started | - |
 | 7. Dynamic Recalculation | v2 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-05*
-*Last updated: 2026-02-05 - Phase 5 verified complete*
+*Last updated: 2026-02-06 - Phase 6 plans created*
