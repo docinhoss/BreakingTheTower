@@ -10,9 +10,26 @@ import com.mojang.tower.navigation.NavigationGrid;
  */
 public final class PathfindingService {
     private final AStarPathfinder pathfinder;
+    private int maxNodes = AStarPathfinder.DEFAULT_MAX_NODES;
 
     public PathfindingService(NavigationGrid grid) {
         this.pathfinder = new AStarPathfinder(grid);
+    }
+
+    /**
+     * Set the maximum number of nodes to explore before giving up.
+     * @param limit node limit (default 1024)
+     */
+    public void setMaxNodes(int limit) {
+        this.maxNodes = limit;
+    }
+
+    /**
+     * Get the current maximum node limit.
+     * @return current node limit
+     */
+    public int getMaxNodes() {
+        return maxNodes;
     }
 
     /**
@@ -24,7 +41,7 @@ public final class PathfindingService {
     public PathResult findPath(double fromX, double fromY, double toX, double toY) {
         GridCell start = worldToGrid(fromX, fromY);
         GridCell goal = worldToGrid(toX, toY);
-        return pathfinder.findPath(start, goal);
+        return pathfinder.findPath(start, goal, maxNodes);
     }
 
     /**

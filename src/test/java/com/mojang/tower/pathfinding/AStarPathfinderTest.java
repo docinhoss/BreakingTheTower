@@ -71,7 +71,7 @@ class AStarPathfinderTest {
     @Test
     void findPath_straightLine_returnsOptimalPath() {
         // Path from (0,0) to (5,0) should be 6 cells (0,1,2,3,4,5)
-        PathResult result = pathfinder.findPath(new GridCell(0, 0), new GridCell(5, 0));
+        PathResult result = pathfinder.findPath(new GridCell(0, 0), new GridCell(5, 0), AStarPathfinder.DEFAULT_MAX_NODES);
 
         assertInstanceOf(PathResult.Found.class, result);
         PathResult.Found found = (PathResult.Found) result;
@@ -89,7 +89,7 @@ class AStarPathfinderTest {
         pathfinder = new AStarPathfinder(createGrid(testGrid));
 
         // Path from (0,2) to (4,2) should go around the wall
-        PathResult result = pathfinder.findPath(new GridCell(0, 2), new GridCell(4, 2));
+        PathResult result = pathfinder.findPath(new GridCell(0, 2), new GridCell(4, 2), AStarPathfinder.DEFAULT_MAX_NODES);
 
         assertInstanceOf(PathResult.Found.class, result);
         PathResult.Found found = (PathResult.Found) result;
@@ -110,7 +110,7 @@ class AStarPathfinderTest {
         // Path from (0,0) to (3,3) should use diagonals
         // Optimal diagonal path: (0,0) -> (1,1) -> (2,2) -> (3,3) = 4 cells
         // Cardinal-only would be 7 cells: 3 right + 3 down + start
-        PathResult result = pathfinder.findPath(new GridCell(0, 0), new GridCell(3, 3));
+        PathResult result = pathfinder.findPath(new GridCell(0, 0), new GridCell(3, 3), AStarPathfinder.DEFAULT_MAX_NODES);
 
         assertInstanceOf(PathResult.Found.class, result);
         PathResult.Found found = (PathResult.Found) result;
@@ -127,7 +127,7 @@ class AStarPathfinderTest {
         }
         pathfinder = new AStarPathfinder(createGrid(testGrid));
 
-        PathResult result = pathfinder.findPath(new GridCell(0, 0), new GridCell(5, 5));
+        PathResult result = pathfinder.findPath(new GridCell(0, 0), new GridCell(5, 5), AStarPathfinder.DEFAULT_MAX_NODES);
 
         assertInstanceOf(PathResult.NotFound.class, result);
         PathResult.NotFound notFound = (PathResult.NotFound) result;
@@ -136,7 +136,7 @@ class AStarPathfinderTest {
 
     @Test
     void findPath_startEqualsGoal_returnsSingleCell() {
-        PathResult result = pathfinder.findPath(new GridCell(3, 3), new GridCell(3, 3));
+        PathResult result = pathfinder.findPath(new GridCell(3, 3), new GridCell(3, 3), AStarPathfinder.DEFAULT_MAX_NODES);
 
         assertInstanceOf(PathResult.Found.class, result);
         PathResult.Found found = (PathResult.Found) result;
@@ -149,7 +149,7 @@ class AStarPathfinderTest {
         testGrid[0][0] = false;
         pathfinder = new AStarPathfinder(createGrid(testGrid));
 
-        PathResult result = pathfinder.findPath(new GridCell(0, 0), new GridCell(5, 5));
+        PathResult result = pathfinder.findPath(new GridCell(0, 0), new GridCell(5, 5), AStarPathfinder.DEFAULT_MAX_NODES);
 
         assertInstanceOf(PathResult.NotFound.class, result);
         PathResult.NotFound notFound = (PathResult.NotFound) result;
@@ -164,7 +164,7 @@ class AStarPathfinderTest {
         for (int i = 0; i < 100; i++) {
             // Create fresh pathfinder each time to ensure no state leakage
             AStarPathfinder fresh = new AStarPathfinder(createGrid(testGrid));
-            PathResult result = fresh.findPath(new GridCell(0, 0), new GridCell(7, 5));
+            PathResult result = fresh.findPath(new GridCell(0, 0), new GridCell(7, 5), AStarPathfinder.DEFAULT_MAX_NODES);
 
             assertInstanceOf(PathResult.Found.class, result);
             PathResult.Found found = (PathResult.Found) result;
@@ -182,7 +182,7 @@ class AStarPathfinderTest {
     void findPath_diagonalCostsMore_prefersCardinal() {
         // When straight path exists, should not take unnecessary diagonals
         // Path from (0,0) to (4,0) - pure horizontal movement
-        PathResult result = pathfinder.findPath(new GridCell(0, 0), new GridCell(4, 0));
+        PathResult result = pathfinder.findPath(new GridCell(0, 0), new GridCell(4, 0), AStarPathfinder.DEFAULT_MAX_NODES);
 
         assertInstanceOf(PathResult.Found.class, result);
         PathResult.Found found = (PathResult.Found) result;
