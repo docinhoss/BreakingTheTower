@@ -323,12 +323,14 @@ public sealed class Job
     {
     }
 
+    /**
+     * Called when peon collides but cannot reach target via collision path.
+     * Does NOT immediately abandon - that happens via pathfinding NotFound.
+     * Clears target to allow re-targeting on next tick.
+     */
     public void cantReach()
     {
-        if (random.nextDouble() < 0.1)
-        {
-            target = null;
-        }
+        target = null;
     }
 
     public void collide(Entity e)
