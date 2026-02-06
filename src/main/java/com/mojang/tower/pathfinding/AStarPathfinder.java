@@ -17,7 +17,8 @@ import java.util.*;
 public final class AStarPathfinder {
     private static final int D = 10;   // Cardinal movement cost
     private static final int D2 = 14;  // Diagonal movement cost (approximates 10 * sqrt(2))
-    private static final int MAX_NODES = 1000; // Prevent unbounded search
+    /** Default node limit to prevent unbounded search */
+    public static final int DEFAULT_MAX_NODES = 1024;
 
     // 8 directions: N, NE, E, SE, S, SW, W, NW
     private static final int[][] DIRECTIONS = {
@@ -39,9 +40,10 @@ public final class AStarPathfinder {
      * Find optimal path from start to goal using A* algorithm.
      * @param start starting grid cell
      * @param goal target grid cell
+     * @param maxNodes maximum nodes to explore before giving up
      * @return PathResult.Found with path, or PathResult.NotFound with reason
      */
-    public PathResult findPath(GridCell start, GridCell goal) {
+    public PathResult findPath(GridCell start, GridCell goal, int maxNodes) {
         // Early termination: check start/goal validity
         if (!isWalkable(start)) {
             return new PathResult.NotFound("Start not walkable");
@@ -70,7 +72,7 @@ public final class AStarPathfinder {
 
         int nodesExplored = 0;
 
-        while (!openSet.isEmpty() && nodesExplored < MAX_NODES) {
+        while (!openSet.isEmpty() && nodesExplored < maxNodes) {
             PathNode current = openSet.poll();
             nodesExplored++;
 
