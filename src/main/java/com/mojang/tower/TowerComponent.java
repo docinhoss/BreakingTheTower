@@ -131,6 +131,7 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
     {
         Sound sound = switch (event)
         {
+            case AbandonedTargetSound() -> null; // No sound asset yet
             case SelectSound() -> new Sound.Select();
             case PlantSound() -> new Sound.Plant();
             case DestroySound() -> new Sound.Destroy();
@@ -143,7 +144,7 @@ public class TowerComponent extends Canvas implements Runnable, MouseListener, M
             case MonsterDeathSound() -> new Sound.MonsterDeath();
             case WinSound() -> new Sound.WinSound();
         };
-        ServiceLocator.audio().play(sound);
+        if (sound != null) ServiceLocator.audio().play(sound);
     }
 
     private void handleEffectEvent(EffectEvent event)
