@@ -7,6 +7,7 @@ package com.mojang.tower.event;
  * Events are data-only - the actual Sound objects are created in the handler.
  */
 public sealed interface SoundEvent permits
+    AbandonedTargetSound,
     SelectSound,
     PlantSound,
     DestroySound,
