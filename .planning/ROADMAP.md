@@ -25,7 +25,7 @@ See `.planning/milestones/v1-ROADMAP.md` for archived v1 roadmap.
 **Milestone Goal:** Peons navigate intelligently around obstacles instead of bumping repeatedly.
 
 - [x] **Phase 5: Core A* and Integration** - Deterministic pathfinding with MovementSystem integration
-- [ ] **Phase 6: Unreachable Handling** - Graceful handling of blocked targets
+- [x] **Phase 6: Unreachable Handling** - Graceful handling of blocked targets
 - [ ] **Phase 7: Dynamic Recalculation** - Path updates when world changes
 
 ## Phase Details
@@ -57,8 +57,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md - Infrastructure: AbandonedTargetSound event, configurable node limit, Job.getTarget() accessor
-- [ ] 06-02-PLAN.md - Peon behavior: blacklist, trapped detection, immediate abandonment
+- [x] 06-01-PLAN.md - Infrastructure: AbandonedTargetSound event, configurable node limit, Job.getTarget() accessor
+- [x] 06-02-PLAN.md - Peon behavior: blacklist, trapped detection, immediate abandonment
 
 ### Phase 7: Dynamic Recalculation
 **Goal**: Peons reroute when obstacles appear or disappear mid-journey
@@ -84,9 +84,9 @@ Plans:
 | 3. Movement | v1.0 | 3/3 | Complete | 2026-02-05 |
 | 4. Navigation | v1.0 | 3/3 | Complete | 2026-02-05 |
 | 5. Core A* and Integration | v2 | 2/2 | Complete | 2026-02-05 |
-| 6. Unreachable Handling | v2 | 0/2 | Not started | - |
+| 6. Unreachable Handling | v2 | 2/2 | Complete | 2026-02-06 |
 | 7. Dynamic Recalculation | v2 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-05*
-*Last updated: 2026-02-06 - Phase 6 plans created*
+*Last updated: 2026-02-06 - Phase 6 complete*

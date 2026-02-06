@@ -16,9 +16,9 @@ Requirements for pathfinding milestone. Each maps to roadmap phases.
 
 ### Unreachable Handling
 
-- [ ] **REACH-01**: Peon detects when target is completely blocked (surrounded by obstacles)
-- [ ] **REACH-02**: Peon abandons unreachable targets quickly (not 10% random abandon)
-- [ ] **REACH-03**: Pathfinding has node limit to prevent unbounded search
+- [x] **REACH-01**: Peon detects when target is completely blocked (surrounded by obstacles)
+- [x] **REACH-02**: Peon abandons unreachable targets quickly (not 10% random abandon)
+- [x] **REACH-03**: Pathfinding has node limit to prevent unbounded search
 
 ### Dynamic Recalculation
 
@@ -72,9 +72,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INT-01 | Phase 5 | Complete |
 | INT-02 | Phase 5 | Complete |
 | INT-03 | Phase 5 | Complete |
-| REACH-01 | Phase 6 | Pending |
-| REACH-02 | Phase 6 | Pending |
-| REACH-03 | Phase 6 | Pending |
+| REACH-01 | Phase 6 | Complete |
+| REACH-02 | Phase 6 | Complete |
+| REACH-03 | Phase 6 | Complete |
 | DYN-01 | Phase 7 | Pending |
 | DYN-02 | Phase 7 | Pending |
 | DYN-03 | Phase 7 | Pending |
@@ -86,4 +86,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 — Phase 5 requirements complete (7/13)*
+*Last updated: 2026-02-06 — Phase 6 requirements complete (10/13)*
